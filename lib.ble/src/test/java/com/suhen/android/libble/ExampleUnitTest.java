@@ -4,7 +4,7 @@ import com.suhen.android.libble.utils.ByteZipUtil;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -26,6 +26,7 @@ public class ExampleUnitTest {
 
     @Test
     public void bzip2Test() {
+        mString +=mString;
         byte[] origin = mString.getBytes();
         System.out.println(origin.length);
 
@@ -39,6 +40,7 @@ public class ExampleUnitTest {
 
     @Test
     public void gzipTest() {
+        mString +=mString;
         byte[] origin = mString.getBytes();
         System.out.println(origin.length);
 
@@ -48,5 +50,11 @@ public class ExampleUnitTest {
         //////
         String str = new String(ByteZipUtil.unGZip(bZip2));
         System.out.println(str);
+    }
+
+    @Test
+    public void uuid(){
+        // 4622c045-1cd2-4211-adc5-89df72c789ec
+        String u = "4622c045-1cd2-4211-adc5-89df72c789ec";
     }
 }

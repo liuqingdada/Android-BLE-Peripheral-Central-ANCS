@@ -1,12 +1,8 @@
 package com.suhen.android.libble.utils;
 
-import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.SystemClock;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import net.vidageek.mirror.dsl.Mirror;
@@ -31,7 +27,9 @@ public class ClsUtils {
 
     public static String getBtAddressViaReflection() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        bluetoothAdapter.enable();
+        if (!bluetoothAdapter.isEnabled()) {
+            bluetoothAdapter.enable();
+        }
         Object bluetoothManagerService = new Mirror().on(bluetoothAdapter)
                                                      .get()
                                                      .field("mService");
