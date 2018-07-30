@@ -104,4 +104,5 @@ ext {
     zxingZbarVersion = "1.2.5"
 
     mirror = "1.6.1"
+    FastBleLib = "2.3.2"
 }

@@ -15,16 +15,6 @@
         android:required="true"/>
 
     <application>
-        <service
-            android:name="com.suhen.android.libble.service.SimpleBleCentralService"
-            android:enabled="true"
-            android:exported="true">
-        </service>
-        <service
-            android:name="com.suhen.android.libble.service.SimplePeripheralService"
-            android:enabled="true"
-            android:exported="true">
-        </service>
     </application>
 
 </manifest>

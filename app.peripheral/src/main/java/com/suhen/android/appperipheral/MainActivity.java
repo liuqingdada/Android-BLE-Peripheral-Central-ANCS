@@ -1,29 +1,18 @@
 package com.suhen.android.appperipheral;
 
-import android.support.v7.app.AppCompatActivity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
-import com.suhen.android.libble.peripheral.BlePeripheral;
+import com.suhen.android.appperipheral.service.SimplePeripheralService;
 
 public class MainActivity extends AppCompatActivity {
-
-    private BlePeripheral mBlePeripheral;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mBlePeripheral = BlePeripheral.getInstance(this);
-        mBlePeripheral.onCreate();
-
-
-        mBlePeripheral.setupPeripheral();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mBlePeripheral.onDestroy();
+        startService(new Intent(this, SimplePeripheralService.class));
     }
 }

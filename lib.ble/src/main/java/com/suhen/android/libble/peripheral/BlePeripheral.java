@@ -31,6 +31,7 @@ import com.suhen.android.libble.utils.TypeConversion;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by liuqing
@@ -41,11 +42,8 @@ import java.util.UUID;
  */
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-public class BlePeripheral extends BluetoothGattServerCallback {
-    private static final String TAG = BlePeripheral.class.getSimpleName();
-
-    private static BlePeripheral sBlePeripheral;
-    private BluetoothStatusReceiver mBluetoothStatusReceiver = new BluetoothStatusReceiver();
+public abstract class BlePeripheral extends BluetoothGattServerCallback implements IPeripheral {
+    protected static final String TAG = BlePeripheral.class.getSimpleName();
 
     protected Context mContext;
 
@@ -54,28 +52,21 @@ public class BlePeripheral extends BluetoothGattServerCallback {
     protected BluetoothLeAdvertiser mLeAdvertiser;
     protected BluetoothGattServer mBluetoothGattServer;
 
-    protected boolean isConnected;
+    private boolean isConnected;
+    private BluetoothStatusReceiver mBluetoothStatusReceiver;
 
     protected BlePeripheral(Context context) {
         mContext = context.getApplicationContext();
     }
 
-    public static synchronized BlePeripheral getInstance(Context context) {
-        if (sBlePeripheral == null) {
-            sBlePeripheral = new BlePeripheral(context);
-        }
-        return sBlePeripheral;
-    }
-
+    @Override
     public void onCreate() {
+        mBluetoothStatusReceiver = new BluetoothStatusReceiver();
         IntentFilter bleIntentFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mContext.registerReceiver(mBluetoothStatusReceiver, bleIntentFilter);
     }
 
-    /**
-     * step 1.
-     * Call this method to confirm; and it can initialize ble.
-     */
+    @Override
     public boolean isSupportBle() {
         if (mContext.getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -94,11 +85,8 @@ public class BlePeripheral extends BluetoothGattServerCallback {
         }
     }
 
-    /**
-     * step 2.
-     * init peripheral
-     */
-    public void setupPeripheral() {
+    @Override
+    public void setup() {
         mBluetoothManager = (BluetoothManager) mContext.getSystemService(
                 Context.BLUETOOTH_SERVICE);
         assert mBluetoothManager != null;
@@ -111,39 +99,39 @@ public class BlePeripheral extends BluetoothGattServerCallback {
             }
 
         } else {
-            main();
+            start();
         }
     }
 
+    @Override
     public void preparePair() {
         mBluetoothAdapter.startDiscovery();
         ClsUtils.setDiscoverableTimeout(100);
     }
 
+    @Override
+    public boolean isConnected() {
+        return this.isConnected;
+    }
+
+    @Override
     public void onDestroy() {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
+        end();
     }
 
-    protected void onPeripheralStartSuccess(AdvertiseSettings settingsInEffect) {
-    }
+    protected abstract void onPeripheralStartSuccess(AdvertiseSettings settingsInEffect);
 
-    protected void onPeripheralStartFailure(int errorCode) {
-        stopAdvertising();
-    }
+    protected abstract void onPeripheralStartFailure(int errorCode);
 
-    protected void onConnected() {
-    }
+    protected abstract void onConnected();
 
-    protected void onDisconnected() {
-        stopAdvertising();
-        startAdvertising();
-    }
+    protected abstract void onDisconnected();
 
-    protected void onReceiveBytes(byte[] bytes) {
-    }
+    protected abstract void onReceiveBytes(byte[] bytes);
 
-    protected void sendBleBytes(byte[] bytes) {
-    }
+    @Override
+    public abstract void sendBleBytes(byte[] bytes);
 
     /**
      * Note that some devices do not support long names.
@@ -342,7 +330,7 @@ public class BlePeripheral extends BluetoothGattServerCallback {
 
                     case BluetoothAdapter.STATE_ON:
                         Log.e(TAG, "bluetooth ON");
-                        main();
+                        start();
 
                         break;
 
@@ -354,40 +342,57 @@ public class BlePeripheral extends BluetoothGattServerCallback {
         }
     }
 
+    // Avoid multiple initialization
+    private AtomicBoolean peripheralFlag = new AtomicBoolean(false);
+
     /**
      * on bluetooth is open, or it is already open.
      */
-    private void main() {
-        // step 1
-        String btAddress = ClsUtils.getBtAddressViaReflection();
-        StringUtil.putString(mContext, BLE.BT_MAC, btAddress);
+    private synchronized void start() {
+        if (peripheralFlag.get()) {
+            Log.w(TAG, "main: peripheral is already initialized.");
+            return;
+        }
 
-        // step 2
-        preparePair();
+        try {
+            // step 1
+            String btAddress = ClsUtils.getBtAddressViaReflection();
+            StringUtil.putString(mContext, BLE.BT_MAC, btAddress);
 
-        // step 3
-        String bluetoothName = generatePeripheralName();
-        Log.d(TAG, "main: " + bluetoothName);
-        mBluetoothAdapter.setName(bluetoothName);
+            // step 2
+            preparePair();
 
-        // step 4
-        openGattServer();
-        addGattService();
+            // step 3
+            String bluetoothName = generatePeripheralName();
+            Log.d(TAG, "main: " + bluetoothName);
+            mBluetoothAdapter.setName(bluetoothName);
 
-        // step 5
-        startAdvertising();
+            // step 4
+            openGattServer();
+            addGattService();
+
+            // step 5
+            startAdvertising();
+
+        } finally {
+            peripheralFlag.set(true);
+        }
     }
 
-    private void end() {
-        stopAdvertising();
-        mBluetoothGattServer.clearServices();
-        mBluetoothGattServer.close();
+    private synchronized void end() {
+        try {
+            stopAdvertising();
+            mBluetoothGattServer.clearServices();
+            mBluetoothGattServer.close();
+        } finally {
+            peripheralFlag.set(false);
+        }
     }
 
     private void openBTByUser() {
-        Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG)
-             .show();
         if (!mBluetoothAdapter.isEnabled()) {
+            Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG)
+                 .show();
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             mContext.startActivity(enableBtIntent);
         }
@@ -402,12 +407,12 @@ public class BlePeripheral extends BluetoothGattServerCallback {
 
     }
 
-    private void startAdvertising() {
+    protected void startAdvertising() {
         mLeAdvertiser.startAdvertising(generateAdvertiseSettings(),
                                        generateAdvertiseData(), mAdvertiseCallback);
     }
 
-    private void stopAdvertising() {
+    protected void stopAdvertising() {
         mLeAdvertiser.stopAdvertising(mAdvertiseCallback);
     }
 
