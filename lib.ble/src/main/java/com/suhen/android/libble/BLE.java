@@ -19,6 +19,7 @@ public class BLE {
     public static final String BT_MAC = "bt_mac_address";
 
     public static final String BT_NO_PERMISSION = "Unable to get bluetooth permission";
+    public static final String NOT_SUPPORT_PERIPHERAL = "This device is not support peripheral";
 
     // UUID
     public static final String SERVICE_UUID = "4622c045-1cd2-4211-adc5-89df72c789ec";
