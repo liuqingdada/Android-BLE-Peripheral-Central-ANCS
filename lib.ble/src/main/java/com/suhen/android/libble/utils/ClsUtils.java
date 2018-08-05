@@ -202,7 +202,7 @@ public class ClsUtils {
             setScanMode.setAccessible(true);
 
             setDiscoverableTimeout.invoke(adapter, timeout);
-            setScanMode.invoke(adapter, BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE,
+            setScanMode.invoke(adapter, BluetoothAdapter.SCAN_MODE_CONNECTABLE,
                                timeout);
         } catch (Exception e) {
             e.printStackTrace();
@@ -220,7 +220,7 @@ public class ClsUtils {
             setScanMode.setAccessible(true);
 
             setDiscoverableTimeout.invoke(adapter, 1);
-            setScanMode.invoke(adapter, BluetoothAdapter.SCAN_MODE_CONNECTABLE, 1);
+            setScanMode.invoke(adapter, BluetoothAdapter.SCAN_MODE_NONE, 1);
         } catch (Exception e) {
             e.printStackTrace();
         }

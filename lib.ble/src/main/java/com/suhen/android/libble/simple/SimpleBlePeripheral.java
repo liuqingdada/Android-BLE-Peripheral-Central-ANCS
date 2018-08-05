@@ -1,15 +1,21 @@
 package com.suhen.android.libble.simple;
 
 import android.annotation.TargetApi;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.content.Context;
 import android.os.Build;
+import android.util.Log;
 
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.peripheral.BlePeripheral;
+import com.suhen.android.libble.utils.StringUtil;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -20,6 +26,8 @@ import java.util.UUID;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class SimpleBlePeripheral extends BlePeripheral {
+
+    private static final int MANUFACTURER_ID = 0xFFFF;
 
     private SimpleBlePeripheral(Context context) {
         super(context);
@@ -36,12 +44,16 @@ public class SimpleBlePeripheral extends BlePeripheral {
     }
 
     @Override
-    protected void onConnected() {
+    protected void onConnected(BluetoothDevice device) {
+        // verify central device
+
+        // send a blemessage, if didn't get the desired response data to disconnect
+
 
     }
 
     @Override
-    protected void onDisconnected() {
+    protected void onDisconnected(BluetoothDevice device) {
         stopAdvertising();
         startAdvertising();
     }
@@ -54,6 +66,37 @@ public class SimpleBlePeripheral extends BlePeripheral {
     @Override
     public void sendBleBytes(byte[] bytes) {
 
+    }
+
+    @Override
+    protected String generatePeripheralName() {
+        String mac = StringUtil.getString(mContext, BLE.PERIPHERAL_MAC, "");
+
+        mac = mac.substring(mac.length() - 7, mac.length());
+        mac = mac.replaceAll(":", "");
+
+        return "Suhen_" + mac;
+    }
+
+    @Override
+    protected AdvertiseSettings generateAdvertiseSettings() {
+        return new AdvertiseSettings.Builder()
+                .setConnectable(true)
+                .setTimeout(0)
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+                .build();
+    }
+
+    @Override
+    protected AdvertiseData generateAdvertiseData() {
+        byte[] bytes = generatePeripheralName().getBytes();
+
+        return new AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .addManufacturerData(MANUFACTURER_ID, bytes)
+                //.addServiceUuid(new ParcelUuid(UUID.fromString(SERVICE_UUID)))
+                .build();
     }
 
     /**
@@ -78,5 +121,34 @@ public class SimpleBlePeripheral extends BlePeripheral {
         peripheralService.addCharacteristic(characteristicIndicate);
 
         mBluetoothGattServer.addService(peripheralService);
+    }
+
+    @Override
+    public void onServiceAdded(int status, BluetoothGattService service) {
+        Log.v(TAG, "onServiceAdded: status: " + status + ", service: " + service.getUuid());
+        for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
+            Log.v(TAG, "onServiceAdded: service has characteristic: " + characteristic.getUuid());
+        }
+    }
+
+    @Override
+    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
+                                             BluetoothGattCharacteristic characteristic,
+                                             boolean preparedWrite, boolean responseNeeded,
+                                             int offset, byte[] value) {
+        if (characteristic.getUuid()
+                          .toString()
+                          .equals(BLE.CHAR_WRITE_UUID)) {
+            // receive data:
+            Log.i(TAG, "onCharacteristicWriteRequest: " + Arrays.toString(value));
+            onReceiveBytes(value);
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
+                                              value);
+        }
+    }
+
+    @Override
+    public void onMtuChanged(BluetoothDevice device, int mtu) {
+        Log.i(TAG, "onMtuChanged: mtu = " + mtu);
     }
 }

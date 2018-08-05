@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
@@ -28,9 +27,7 @@ import android.widget.Toast;
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.utils.ClsUtils;
 import com.suhen.android.libble.utils.StringUtil;
-import com.suhen.android.libble.utils.TypeConversion;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -121,8 +118,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     @Override
     public void preparePair() {
-        mBluetoothAdapter.startDiscovery();
-        ClsUtils.setDiscoverableTimeout(100);
+        ClsUtils.setDiscoverableTimeout(120);
     }
 
     @Override
@@ -140,9 +136,9 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     protected abstract void onPeripheralStartFailure(int errorCode);
 
-    protected abstract void onConnected();
+    protected abstract void onConnected(BluetoothDevice device);
 
-    protected abstract void onDisconnected();
+    protected abstract void onDisconnected(BluetoothDevice device);
 
     protected abstract void onReceiveBytes(byte[] bytes);
 
@@ -153,42 +149,17 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
      * Note that some devices do not support long names.
      * Recommended within 12 bytes.
      */
-    protected String generatePeripheralName() {
-        String mac = StringUtil.getString(mContext, BLE.BT_MAC, "");
-
-        mac = mac.substring(mac.length() - 7, mac.length());
-        mac = mac.replaceAll(":", "");
-
-        return "Suhen_" + mac;
-    }
+    protected abstract String generatePeripheralName();
 
     /**
      * @return Your BLE peripheral settings.
      */
-    protected AdvertiseSettings generateAdvertiseSettings() {
-        return new AdvertiseSettings.Builder()
-                .setConnectable(true)
-                .setTimeout(0)
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-                .build();
-    }
+    protected abstract AdvertiseSettings generateAdvertiseSettings();
 
     /**
      * Recommended within 8 bytes.
      */
-    protected AdvertiseData generateAdvertiseData() {
-        String mac = StringUtil.getString(mContext, BLE.BT_MAC, "00:00:00:00:00:00");
-        mac = mac.replaceAll(":", "");
-        byte[] mac_bytes = TypeConversion.hexString2Bytes(mac);
-        Log.d(TAG, "generateAdvertiseData: " + Arrays.toString(mac_bytes));
-
-        return new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .addManufacturerData(BLE.MANUFACTURER_ID, mac_bytes)
-                //.addServiceUuid(new ParcelUuid(UUID.fromString(SERVICE_UUID)))
-                .build();
-    }
+    protected abstract AdvertiseData generateAdvertiseData();
 
     /**
      * All params must be standard UUID, you can use {@link java.util.UUID} generate this param,
@@ -204,38 +175,31 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     @Override
     public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        super.onConnectionStateChange(device, status, newState);
         switch (newState) {
 
             case BluetoothProfile.STATE_CONNECTED:
                 isConnected = true;
                 Log.d(TAG, "onConnectionStateChange: peripheral STATE_CONNECTED");
 
-                onConnected(); // central incomming
+                onConnected(device); // central incomming
                 break;
 
             case BluetoothProfile.STATE_DISCONNECTED:
                 isConnected = false;
                 Log.d(TAG, "onConnectionStateChange: peripheral STATE_DISCONNECTED");
 
-                onDisconnected(); // central outgoing
+                onDisconnected(device); // central outgoing
                 break;
         }
     }
 
     @Override
     public void onServiceAdded(int status, BluetoothGattService service) {
-        super.onServiceAdded(status, service);
-        Log.v(TAG, "onServiceAdded: status: " + status + ", service: " + service.getUuid());
-        for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
-            Log.v(TAG, "onServiceAdded: service has characteristic: " + characteristic.getUuid());
-        }
     }
 
     @Override
     public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
                                             BluetoothGattCharacteristic characteristic) {
-        super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
     }
 
     @Override
@@ -243,23 +207,11 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
                                              BluetoothGattCharacteristic characteristic,
                                              boolean preparedWrite, boolean responseNeeded,
                                              int offset, byte[] value) {
-        super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite,
-                                           responseNeeded, offset, value);
-        if (characteristic.getUuid()
-                          .toString()
-                          .equals(BLE.CHAR_WRITE_UUID)) {
-            // receive data:
-            Log.i(TAG, "onCharacteristicWriteRequest: " + Arrays.toString(value));
-            onReceiveBytes(value);
-            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
-                                              value);
-        }
     }
 
     @Override
     public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset,
                                         BluetoothGattDescriptor descriptor) {
-        super.onDescriptorReadRequest(device, requestId, offset, descriptor);
     }
 
     @Override
@@ -267,34 +219,26 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
                                          BluetoothGattDescriptor descriptor,
                                          boolean preparedWrite,
                                          boolean responseNeeded, int offset, byte[] value) {
-        super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite,
-                                       responseNeeded,
-                                       offset, value);
     }
 
     @Override
     public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-        super.onExecuteWrite(device, requestId, execute);
     }
 
     @Override
     public void onNotificationSent(BluetoothDevice device, int status) {
-        super.onNotificationSent(device, status);
     }
 
     @Override
     public void onMtuChanged(BluetoothDevice device, int mtu) {
-        super.onMtuChanged(device, mtu);
     }
 
     @Override
     public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        super.onPhyUpdate(device, txPhy, rxPhy, status);
     }
 
     @Override
     public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        super.onPhyRead(device, txPhy, rxPhy, status);
     }
 
     /* BluetoothGattServerCallback END */       /* BluetoothGattServerCallback END */
@@ -354,15 +298,16 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
         try {
             // step 1
             String btAddress = ClsUtils.getBtAddressViaReflection();
-            StringUtil.putString(mContext, BLE.BT_MAC, btAddress);
+            StringUtil.putString(mContext, BLE.PERIPHERAL_MAC, btAddress);
 
             // step 2
-            preparePair();
+            //preparePair();
 
             // step 3
-            String bluetoothName = generatePeripheralName();
-            Log.d(TAG, "start: " + bluetoothName);
-            mBluetoothAdapter.setName(bluetoothName);
+            String peripheralName = generatePeripheralName();
+            mBluetoothAdapter.setName(peripheralName);
+            Log.d(TAG, "start: " + peripheralName);
+            StringUtil.putString(mContext, BLE.PERIPHERAL_NAME, peripheralName);
 
             // step 4
             if (!openGattServer()) {
@@ -420,8 +365,13 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     protected void startAdvertising() {
         if (mLeAdvertiser != null) {
+            AdvertiseData advertiseData = generateAdvertiseData();
+
+            Log.i(TAG, "startAdvertising: " + advertiseData.toString());
+
             mLeAdvertiser.startAdvertising(generateAdvertiseSettings(),
-                                           generateAdvertiseData(), mAdvertiseCallback);
+                                           advertiseData,
+                                           mAdvertiseCallback);
         }
     }
 
@@ -436,6 +386,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             super.onStartSuccess(settingsInEffect);
             Log.i(TAG, "onStartSuccess: " + settingsInEffect.toString());
+
             onPeripheralStartSuccess(settingsInEffect);
         }
 
@@ -443,6 +394,8 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
         public void onStartFailure(int errorCode) {
             super.onStartFailure(errorCode);
             Log.w(TAG, "onStartFailure: " + errorCode);
+
+
             onPeripheralStartFailure(errorCode);
         }
     };

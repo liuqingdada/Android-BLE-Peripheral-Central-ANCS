@@ -1,4 +1,4 @@
-package com.suhen.android.appperipheral.service;
+package com.suhen.android.appcentral.service;
 
 import android.app.Service;
 import android.content.Intent;
@@ -6,19 +6,18 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
-import com.suhen.android.appperipheral.R;
+import com.suhen.android.appcentral.R;
 import com.suhen.android.libble.BLE;
-import com.suhen.android.libble.peripheral.IPeripheral;
+import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.simple.NotificationWizard;
-import com.suhen.android.libble.simple.SimpleBlePeripheral;
+import com.suhen.android.libble.simple.SimpleBleCentral;
 
-public class SimplePeripheralService extends Service {
-    private static final String TAG = "SimplePeripheralService";
-    private static final int FOREGROUND_ID = 0xFFFF;
+public class SimpleBleCentralService extends Service {
+    private static final String TAG = SimpleBleCentralService.class.getSimpleName();
+    private static final int FOREGROUND_ID = 0xFFFE;
+    private ICentral mCentral;
 
-    private IPeripheral mPeripheral;
-
-    public SimplePeripheralService() {
+    public SimpleBleCentralService() {
     }
 
     @Override
@@ -28,15 +27,17 @@ public class SimplePeripheralService extends Service {
 
     @Override
     public void onCreate() {
-        super.onCreate();
         Log.d(TAG, "onCreate: ");
+        super.onCreate();
         startForegroound();
 
-        try {
-            mPeripheral = BLE.peripheral(SimpleBlePeripheral.class, this);
-            mPeripheral.onCreate();
-            mPeripheral.setup();
 
+        try {
+            mCentral = BLE.getCentral(SimpleBleCentral.class, this);
+
+            mCentral.onCreate();
+
+            mCentral.setup();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -59,8 +60,8 @@ public class SimplePeripheralService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         Log.d(TAG, "onDestroy: ");
-        mPeripheral.onDestroy();
+        super.onDestroy();
+        mCentral.onDestroy();
     }
 }

@@ -39,6 +39,6 @@ dependencies {
     implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
 
     implementation group: 'net.vidageek', name: 'mirror', version: "$rootProject.mirror"
-    implementation "com.clj.fastble:FastBleLib:$rootProject.FastBleLib"
+    implementation "com.yanzhenjie:permission:$rootProject.permissions"
 
 }
