@@ -105,10 +105,9 @@ public abstract class BleCentral implements ICentral {
     @Override
     public boolean isSupportCentral() {
         if (mContext.getPackageManager()
-                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+                .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
 
-            mBluetoothManager = (BluetoothManager) mContext.getSystemService(
-                    Context.BLUETOOTH_SERVICE);
+            mBluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
                 return false;
             }
@@ -159,23 +158,16 @@ public abstract class BleCentral implements ICentral {
      *                  According to the practical peripherals to adjust
      */
     @Override
-    public synchronized BluetoothGatt connect(BluetoothDevice bluetoothDevice,
-                                              boolean autoConnect,
-                                              int transport,
-                                              int phy) {
+    public synchronized BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy) {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect,
-                                                        mBluetoothGattCallback,
-                                                        transport);
+            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect, mBluetoothGattCallback, transport);
 
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect,
-                                                        mBluetoothGattCallback, transport);
+            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect, mBluetoothGattCallback, transport);
 
         } else {
-            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect,
-                                                        mBluetoothGattCallback);
+            bluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect, mBluetoothGattCallback);
         }
 
         if (bluetoothGatt == null) {
@@ -235,27 +227,21 @@ public abstract class BleCentral implements ICentral {
 
     protected abstract void onScanFinished();
 
-    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice,
-                                       int rssi,
-                                       String deviceName,
-                                       byte[] manufacturerData) {
+    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName, byte[] manufacturerData) {
     }
 
-    protected abstract void onConnectStarted(BluetoothGatt bluetoothGatt,
-                                             BluetoothDevice bluetoothDevice);
+    protected abstract void onConnectStarted(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice);
 
     protected abstract void onConnected();
 
-    protected abstract void onConnectFailed(BluetoothGatt bluetoothGatt,
-                                            BluetoothDevice bluetoothDevice);
+    protected abstract void onConnectFailed(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice);
 
     private class BluetoothStatusReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {
-                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                                               BluetoothAdapter.ERROR);
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
 
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
@@ -287,27 +273,26 @@ public abstract class BleCentral implements ICentral {
 
     private synchronized void start() {
         AndPermission.with(mContext)
-                     .runtime()
-                     .permission(Permission.Group.LOCATION)
-                     .onGranted(new Action<List<String>>() {
-                         @Override
-                         public void onAction(List<String> data) {
-                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build
-                                     .VERSION_CODES.LOLLIPOP) {
-                                 scanLollipop();
+                .runtime()
+                .permission(Permission.Group.LOCATION)
+                .onGranted(new Action<List<String>>() {
+                    @Override
+                    public void onAction(List<String> data) {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                            scanLollipop();
 
-                             } else {
-                                 scan();
-                             }
-                         }
-                     })
-                     .onDenied(new Action<List<String>>() {
-                         @Override
-                         public void onAction(List<String> data) {
-                             permissionDenied();
-                         }
-                     })
-                     .start();
+                        } else {
+                            scan();
+                        }
+                    }
+                })
+                .onDenied(new Action<List<String>>() {
+                    @Override
+                    public void onAction(List<String> data) {
+                        permissionDenied();
+                    }
+                })
+                .start();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -407,19 +392,9 @@ public abstract class BleCentral implements ICentral {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
 
 
-
-
-
-
-
-
-
-            }else if(newState == BluetoothProfile.STATE_DISCONNECTED){
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 
             }
-
-
-
 
 
         }
@@ -429,29 +404,23 @@ public abstract class BleCentral implements ICentral {
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothGatt gatt,
-                                          BluetoothGattCharacteristic characteristic, int status) {
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         }
 
         @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt,
-                                            BluetoothGattCharacteristic characteristic) {
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
         }
 
         @Override
-        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,
-                                     int status) {
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
         }
 
         @Override
-        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,
-                                      int status) {
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
         }
 
         @Override
@@ -476,7 +445,7 @@ public abstract class BleCentral implements ICentral {
     private synchronized void refreshDeviceCache() {
         try {
             final Method refresh = BluetoothGatt.class.getMethod("refresh");
-            if (refresh != null && bluetoothGatt != null) {
+            if (bluetoothGatt != null) {
                 boolean success = (Boolean) refresh.invoke(bluetoothGatt);
                 Log.i(TAG, "refreshDeviceCache, is success:  " + success);
             }
@@ -505,7 +474,6 @@ public abstract class BleCentral implements ICentral {
     }
 
     private void permissionDenied() {
-        Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG)
-             .show();
+        Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG).show();
     }
 }

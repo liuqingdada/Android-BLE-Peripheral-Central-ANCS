@@ -7,8 +7,6 @@ import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.peripheral.BlePeripheral;
 import com.suhen.android.libble.peripheral.IPeripheral;
 
-import net.vidageek.mirror.dsl.Mirror;
-
 import java.lang.reflect.Constructor;
 
 /**
@@ -50,15 +48,10 @@ public final class BLE {
     /**
      * To get the only one peripheral instance
      */
-    public synchronized static IPeripheral getPeripheral(Class<? extends BlePeripheral> clazz,
-                                                         Context context) throws Exception {
+    public synchronized static IPeripheral getPeripheral(Class<? extends BlePeripheral> clazz, Context context) throws Exception {
         if (PERIPHERAL == null) {
-            Constructor<? extends BlePeripheral> constructor = new Mirror().on(clazz)
-                                                                           .reflect()
-                                                                           .constructor()
-                                                                           .withArgs(Context.class);
+            Constructor<? extends BlePeripheral> constructor = clazz.getConstructor(Context.class);
             constructor.setAccessible(true);
-
             PERIPHERAL = constructor.newInstance(context);
         }
 
@@ -68,15 +61,10 @@ public final class BLE {
     /**
      * To get the only one central instance
      */
-    public synchronized static ICentral getCentral(Class<? extends ICentral> clazz,
-                                                   Context context) throws Exception {
+    public synchronized static ICentral getCentral(Class<? extends ICentral> clazz, Context context) throws Exception {
         if (CENTRAL == null) {
-            Constructor<? extends ICentral> constructor = new Mirror().on(clazz)
-                                                                      .reflect()
-                                                                      .constructor()
-                                                                      .withArgs(Context.class);
+            Constructor<? extends ICentral> constructor = clazz.getConstructor(Context.class);
             constructor.setAccessible(true);
-
             CENTRAL = constructor.newInstance(context);
         }
 
@@ -90,28 +78,18 @@ public final class BLE {
     /**
      * Create a new central instance.
      */
-    public synchronized static ICentral newCentral(Class<? extends ICentral> clazz,
-                                                   Context context) throws Exception {
-        Constructor<? extends ICentral> constructor = new Mirror().on(clazz)
-                                                                  .reflect()
-                                                                  .constructor()
-                                                                  .withArgs(Context.class);
+    public synchronized static ICentral newCentral(Class<? extends ICentral> clazz, Context context) throws Exception {
+        Constructor<? extends ICentral> constructor = clazz.getConstructor(Context.class);
         constructor.setAccessible(true);
-
         return constructor.newInstance(context);
     }
 
     /**
      * Create a new peripheral instance.
      */
-    public synchronized static IPeripheral newPeripheral(Class<? extends BlePeripheral> clazz,
-                                                         Context context) throws Exception {
-        Constructor<? extends BlePeripheral> constructor = new Mirror().on(clazz)
-                                                                       .reflect()
-                                                                       .constructor()
-                                                                       .withArgs(Context.class);
+    public synchronized static IPeripheral newPeripheral(Class<? extends BlePeripheral> clazz, Context context) throws Exception {
+        Constructor<? extends BlePeripheral> constructor = clazz.getConstructor(Context.class);
         constructor.setAccessible(true);
-
         return constructor.newInstance(context);
     }
 }

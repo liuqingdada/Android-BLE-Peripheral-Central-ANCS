@@ -132,18 +132,13 @@ public class SimpleBlePeripheral extends BlePeripheral {
     }
 
     @Override
-    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                                             BluetoothGattCharacteristic characteristic,
-                                             boolean preparedWrite, boolean responseNeeded,
-                                             int offset, byte[] value) {
-        if (characteristic.getUuid()
-                          .toString()
-                          .equals(BLE.CHAR_WRITE_UUID)) {
+    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
+            boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+        if (characteristic.getUuid().toString().equals(BLE.CHAR_WRITE_UUID)) {
             // receive data:
             Log.i(TAG, "onCharacteristicWriteRequest: " + Arrays.toString(value));
             onReceiveBytes(value);
-            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
-                                              value);
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
         }
     }
 

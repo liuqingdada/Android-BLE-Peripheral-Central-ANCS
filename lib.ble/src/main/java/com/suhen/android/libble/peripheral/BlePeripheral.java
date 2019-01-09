@@ -70,8 +70,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     @Override
     public boolean isSupportPeripheral() {
-        if (mContext.getPackageManager()
-                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
 
             mBluetoothManager = (BluetoothManager) mContext.getSystemService(
                     Context.BLUETOOTH_SERVICE);
@@ -198,27 +197,21 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
     }
 
     @Override
-    public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
-                                            BluetoothGattCharacteristic characteristic) {
+    public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
     }
 
     @Override
-    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                                             BluetoothGattCharacteristic characteristic,
-                                             boolean preparedWrite, boolean responseNeeded,
-                                             int offset, byte[] value) {
+    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
+            boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
     }
 
     @Override
-    public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset,
-                                        BluetoothGattDescriptor descriptor) {
+    public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
     }
 
     @Override
-    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId,
-                                         BluetoothGattDescriptor descriptor,
-                                         boolean preparedWrite,
-                                         boolean responseNeeded, int offset, byte[] value) {
+    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor,
+            boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
     }
 
     @Override
@@ -250,8 +243,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
         @Override
         public void onReceive(Context context, Intent intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction())) {
-                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                                               BluetoothAdapter.ERROR);
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
 
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
@@ -343,8 +335,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
     private void openBTByUser() {
         if (!mBluetoothAdapter.isEnabled()) {
-            Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG)
-                 .show();
+            Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG).show();
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             mContext.startActivity(enableBtIntent);
         }
@@ -369,9 +360,7 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
             Log.i(TAG, "startAdvertising: " + advertiseData.toString());
 
-            mLeAdvertiser.startAdvertising(generateAdvertiseSettings(),
-                                           advertiseData,
-                                           mAdvertiseCallback);
+            mLeAdvertiser.startAdvertising(generateAdvertiseSettings(), advertiseData, mAdvertiseCallback);
         }
     }
 

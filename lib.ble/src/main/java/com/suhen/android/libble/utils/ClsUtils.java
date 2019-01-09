@@ -2,52 +2,33 @@ package com.suhen.android.libble.utils;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.os.SystemClock;
 import android.util.Log;
-
-import net.vidageek.mirror.dsl.Mirror;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class ClsUtils {
-    public static String getLocalMacAddress() {
-        BluetoothAdapter btAda = BluetoothAdapter.getDefaultAdapter();
-        // 开启蓝牙
-        if (!btAda.isEnabled()) {
-            if (btAda.enable()) {
-                while (btAda.getState() == BluetoothAdapter.STATE_TURNING_ON
-                        || btAda.getState() != BluetoothAdapter.STATE_ON) {
-                    SystemClock.sleep(100);
-                }
-            }
-        }
-        return getBtAddressViaReflection();
-    }
-
     public static String getBtAddressViaReflection() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!bluetoothAdapter.isEnabled()) {
             bluetoothAdapter.enable();
         }
-        Object bluetoothManagerService = new Mirror().on(bluetoothAdapter)
-                                                     .get()
-                                                     .field("mService");
-        if (bluetoothManagerService == null) {
+
+        try {
+            Object bluetoothManagerService = bluetoothAdapter.getClass().getDeclaredField("mService");
             Log.w("periphery", "couldn't find bluetoothManagerService");
-            return null;
-        }
-        Object address = new Mirror().on(bluetoothManagerService)
-                                     .invoke()
-                                     .method("getAddress")
-                                     .withoutArgs();
-        if (address != null && address instanceof String) {
-            Log.w("periphery", "using reflection to get the BT MAC address: " + address);
-            if (address.equals("") || address.equals("00:00:00:00:00:00")) {
-                getBtAddressViaReflection();
+            Object address = bluetoothManagerService.getClass().getDeclaredMethod("getAddress").invoke(bluetoothManagerService);
+
+            if (address instanceof String) {
+                Log.w("periphery", "using reflection to get the BT MAC address: " + address);
+                if ("".equals(address) || "00:00:00:00:00:00".equals(address) || "02:00:00:00:00:00".equals(address)) {
+                    return null;
+                }
+                return (String) address;
+            } else {
+                return null;
             }
-            return (String) address;
-        } else {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -111,12 +92,12 @@ public class ClsUtils {
     }
 
     public static boolean setPin(Class<? extends BluetoothDevice> btClass, BluetoothDevice btDevice,
-                                 String str) throws Exception {
+            String str) throws Exception {
         try {
             Method removeBondMethod = btClass.getDeclaredMethod("setPin", byte[].class);
             Boolean returnValue = (Boolean) removeBondMethod.invoke(btDevice,
-                                                                    new Object[] {
-                                                                            str.getBytes() });
+                    new Object[]{
+                            str.getBytes()});
             Log.e("returnValue", "" + returnValue);
         } catch (Exception e) {
             e.printStackTrace();
@@ -126,16 +107,16 @@ public class ClsUtils {
     }
 
     public static boolean setPassKey(Class<? extends BluetoothDevice> btClass,
-                                     BluetoothDevice device,
-                                     int key) {
+            BluetoothDevice device,
+            int key) {
 
         Method removeBondMethod = null;
         try {
             removeBondMethod = btClass.getDeclaredMethod("setPassKey",
-                                                         int.class);
+                    int.class);
 
             Boolean returnValue = (Boolean) removeBondMethod.invoke(device,
-                                                                    key);
+                    key);
             Log.e("returnValue", "" + returnValue);
 
         } catch (Exception e) {
@@ -146,7 +127,7 @@ public class ClsUtils {
 
     // 取消用户输入
     public static boolean cancelPairingUserInput(Class<?> btClass,
-                                                 BluetoothDevice device) throws Exception {
+            BluetoothDevice device) throws Exception {
         Method createBondMethod = btClass.getMethod("cancelPairingUserInput");
         //        cancelBondProcess(btClass, device);
         return (boolean) createBondMethod.invoke(device);
@@ -154,7 +135,7 @@ public class ClsUtils {
 
     // 取消配对
     public static boolean cancelBondProcess(Class<?> btClass,
-                                            BluetoothDevice device)
+            BluetoothDevice device)
 
             throws Exception {
         Method createBondMethod = btClass.getMethod("cancelBondProcess");
@@ -163,9 +144,9 @@ public class ClsUtils {
 
     //确认配对
     static public void setPairingConfirmation(Class<?> btClass, BluetoothDevice device,
-                                              boolean isConfirm) throws Exception {
+            boolean isConfirm) throws Exception {
         Method setPairingConfirmation = btClass.getDeclaredMethod("setPairingConfirmation",
-                                                                  boolean.class);
+                boolean.class);
         setPairingConfirmation.invoke(device, isConfirm);
     }
 
@@ -198,12 +179,12 @@ public class ClsUtils {
                     "setDiscoverableTimeout", int.class);
             setDiscoverableTimeout.setAccessible(true);
             Method setScanMode = BluetoothAdapter.class.getMethod("setScanMode", int.class,
-                                                                  int.class);
+                    int.class);
             setScanMode.setAccessible(true);
 
             setDiscoverableTimeout.invoke(adapter, timeout);
             setScanMode.invoke(adapter, BluetoothAdapter.SCAN_MODE_CONNECTABLE,
-                               timeout);
+                    timeout);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -216,7 +197,7 @@ public class ClsUtils {
                     "setDiscoverableTimeout", int.class);
             setDiscoverableTimeout.setAccessible(true);
             Method setScanMode = BluetoothAdapter.class.getMethod("setScanMode", int.class,
-                                                                  int.class);
+                    int.class);
             setScanMode.setAccessible(true);
 
             setDiscoverableTimeout.invoke(adapter, 1);

@@ -1,6 +1,7 @@
 package com.suhen.android.libble.simple;
 
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.content.Context;
 import android.util.Log;
 
@@ -54,7 +55,22 @@ public class SimpleBleCentral extends BleCentral {
 
     @Override
     protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName,
-                                       byte[] manufacturerData) {
+            byte[] manufacturerData) {
         super.onScannedPeripheral(bluetoothDevice, rssi, deviceName, manufacturerData);
+    }
+
+    @Override
+    protected void onConnectStarted(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice) {
+
+    }
+
+    @Override
+    protected void onConnected() {
+
+    }
+
+    @Override
+    protected void onConnectFailed(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice) {
+
     }
 }

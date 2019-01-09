@@ -46,7 +46,7 @@ public class ByteUtil {
         byte[] b = new byte[2];
         for (int i = 0; i < b.length; i++) {
             b[i] = Integer.valueOf(temp & 0xff)
-                          .byteValue();// 将最低位保存在最低位
+                    .byteValue();// 将最低位保存在最低位
             temp = temp >> 8;// 向右移8位
         }
         return b;
@@ -74,7 +74,7 @@ public class ByteUtil {
         byte[] b = new byte[4];
         for (int i = 0; i < b.length; i++) {
             b[i] = Integer.valueOf(temp & 0xff)
-                          .byteValue();// 将最低位保存在最低位
+                    .byteValue();// 将最低位保存在最低位
             temp = temp >> 8;// 向右移8位
         }
         return b;
@@ -127,7 +127,7 @@ public class ByteUtil {
         long l = Double.doubleToLongBits(num);
         for (int i = 0; i < 8; i++) {
             b[i] = Long.valueOf(l)
-                       .byteValue();
+                    .byteValue();
             l = l >> 8;
         }
         return b;
@@ -204,7 +204,7 @@ public class ByteUtil {
     public void testObject2ByteArray() throws IOException,
             ClassNotFoundException {
         // Object obj = "";
-        Integer[] obj = { 1, 3, 4 };
+        Integer[] obj = {1, 3, 4};
 
         // // object to bytearray
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
@@ -250,7 +250,7 @@ public class ByteUtil {
 
     public static <T> boolean linearIn(T[] outer, T[] inner) {
         return Arrays.asList(outer)
-                     .containsAll(Arrays.asList(inner));
+                .containsAll(Arrays.asList(inner));
     }
 
     public static byte[] Byte2byte(Byte[] bytes) {

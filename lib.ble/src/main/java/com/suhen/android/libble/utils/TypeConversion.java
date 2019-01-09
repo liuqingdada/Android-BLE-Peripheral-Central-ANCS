@@ -33,7 +33,9 @@ public class TypeConversion {
         String sTemp;
         for (byte aBArray : bArray) {
             sTemp = Integer.toHexString(0xFF & aBArray);
-            if (sTemp.length() < 2) { sb.append(0); }
+            if (sTemp.length() < 2) {
+                sb.append(0);
+            }
             sb.append(sTemp.toUpperCase());
         }
         return sb.toString();
@@ -73,8 +75,8 @@ public class TypeConversion {
         StringBuilder temp = new StringBuilder();
         for (int i = 0; i < src.length() / 2; i++) {
             temp.append((char) Integer.valueOf(src.substring(i * 2, i * 2 + 2),
-                                               16)
-                                      .byteValue());
+                    16)
+                    .byteValue());
         }
         return temp.toString();
     }
@@ -84,7 +86,7 @@ public class TypeConversion {
      */
     public static Byte char2Byte(Character src) {
         return Integer.valueOf((int) src)
-                      .byteValue();
+                .byteValue();
     }
 
     /**
