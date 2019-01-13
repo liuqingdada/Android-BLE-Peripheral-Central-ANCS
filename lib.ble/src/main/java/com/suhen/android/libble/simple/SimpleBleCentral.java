@@ -24,11 +24,6 @@ public class SimpleBleCentral extends BleCentral {
     }
 
     @Override
-    protected int reconnectCount() {
-        return 0;
-    }
-
-    @Override
     protected String scanDeviceName() {
         return null;
     }
@@ -54,23 +49,27 @@ public class SimpleBleCentral extends BleCentral {
     }
 
     @Override
-    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName,
-            byte[] manufacturerData) {
+    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName, byte[] manufacturerData) {
         super.onScannedPeripheral(bluetoothDevice, rssi, deviceName, manufacturerData);
     }
 
     @Override
-    protected void onConnectStarted(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice) {
+    protected void onConnectStarted(BluetoothGatt bluetoothGatt) {
 
     }
 
     @Override
-    protected void onConnected() {
+    protected void onConnected(BluetoothGatt bluetoothGatt, int status) {
 
     }
 
     @Override
-    protected void onConnectFailed(BluetoothGatt bluetoothGatt, BluetoothDevice bluetoothDevice) {
+    protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback) {
+
+    }
+
+    @Override
+    protected void onDisconnected(BluetoothGatt bluetoothGatt) {
 
     }
 }

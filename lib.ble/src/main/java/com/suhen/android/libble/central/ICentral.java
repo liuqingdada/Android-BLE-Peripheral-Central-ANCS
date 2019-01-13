@@ -3,6 +3,10 @@ package com.suhen.android.libble.central;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 
+import com.suhen.android.libble.central.callback.BleBaseCallback;
+import com.suhen.android.libble.central.callback.BleMtuChangedCallback;
+import com.suhen.android.libble.central.callback.BleRssiCallback;
+
 /**
  * Created by liuqing
  * 2018/7/30.
@@ -13,12 +17,23 @@ public interface ICentral {
 
     boolean isSupportCentral();
 
+    /**
+     * init and start scan
+     */
     void setup();
 
-    BluetoothGatt connect(BluetoothDevice bluetoothDevice,
-                          boolean autoConnect,
-                          int transport,
-                          int phy);
+    /**
+     * if timeout and not found peripheral
+     */
+    void scan();
+
+    void addBleBaseCallback(BleBaseCallback bleBaseCallback);
+
+    void setBleRssiCallback(BleRssiCallback bleRssiCallback);
+
+    void setBleMtuChangedCallback(BleMtuChangedCallback bleMtuChangedCallback);
+
+    BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy);
 
     void preparePair();
 

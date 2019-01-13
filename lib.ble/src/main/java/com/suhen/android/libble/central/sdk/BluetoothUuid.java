@@ -100,7 +100,7 @@ public final class BluetoothUuid {
 
     public static final ParcelUuid[] RESERVED_UUIDS = {
             AudioSink, AudioSource, AdvAudioDist, HSP, Handsfree, AvrcpController, AvrcpTarget,
-            ObexObjectPush, PANU, NAP, MAP, MNS, MAS, SAP };
+            ObexObjectPush, PANU, NAP, MAP, MNS, MAS, SAP};
 
     public static boolean isAudioSource(ParcelUuid uuid) {
         return uuid.equals(AudioSource);
@@ -169,12 +169,18 @@ public final class BluetoothUuid {
      * @param uuid
      */
     public static boolean isUuidPresent(ParcelUuid[] uuidArray, ParcelUuid uuid) {
-        if ((uuidArray == null || uuidArray.length == 0) && uuid == null) { return true; }
+        if ((uuidArray == null || uuidArray.length == 0) && uuid == null) {
+            return true;
+        }
 
-        if (uuidArray == null) { return false; }
+        if (uuidArray == null) {
+            return false;
+        }
 
         for (ParcelUuid element : uuidArray) {
-            if (element.equals(uuid)) { return true; }
+            if (element.equals(uuid)) {
+                return true;
+            }
         }
         return false;
     }
@@ -186,7 +192,9 @@ public final class BluetoothUuid {
      * @param uuidB - List of ParcelUuids
      */
     public static boolean containsAnyUuid(ParcelUuid[] uuidA, ParcelUuid[] uuidB) {
-        if (uuidA == null && uuidB == null) { return true; }
+        if (uuidA == null && uuidB == null) {
+            return true;
+        }
 
         if (uuidA == null) {
             return uuidB.length == 0 ? true : false;
@@ -198,7 +206,9 @@ public final class BluetoothUuid {
 
         HashSet<ParcelUuid> uuidSet = new HashSet<ParcelUuid>(Arrays.asList(uuidA));
         for (ParcelUuid uuid : uuidB) {
-            if (uuidSet.contains(uuid)) { return true; }
+            if (uuidSet.contains(uuid)) {
+                return true;
+            }
         }
         return false;
     }
@@ -211,17 +221,23 @@ public final class BluetoothUuid {
      * @param uuidB - Array of ParcelUuidsB
      */
     public static boolean containsAllUuids(ParcelUuid[] uuidA, ParcelUuid[] uuidB) {
-        if (uuidA == null && uuidB == null) { return true; }
+        if (uuidA == null && uuidB == null) {
+            return true;
+        }
 
         if (uuidA == null) {
             return uuidB.length == 0 ? true : false;
         }
 
-        if (uuidB == null) { return true; }
+        if (uuidB == null) {
+            return true;
+        }
 
         HashSet<ParcelUuid> uuidSet = new HashSet<ParcelUuid>(Arrays.asList(uuidA));
         for (ParcelUuid uuid : uuidB) {
-            if (!uuidSet.contains(uuid)) { return false; }
+            if (!uuidSet.contains(uuid)) {
+                return false;
+            }
         }
         return true;
     }
@@ -262,7 +278,7 @@ public final class BluetoothUuid {
         // Construct a 128 bit UUID.
         if (length == UUID_BYTES_128_BIT) {
             ByteBuffer buf = ByteBuffer.wrap(uuidBytes)
-                                       .order(ByteOrder.LITTLE_ENDIAN);
+                    .order(ByteOrder.LITTLE_ENDIAN);
             long msb = buf.getLong(8);
             long lsb = buf.getLong(0);
             return new ParcelUuid(new UUID(msb, lsb));
@@ -281,9 +297,9 @@ public final class BluetoothUuid {
             shortUuid += (uuidBytes[3] & 0xFF) << 24;
         }
         long msb = BASE_UUID.getUuid()
-                            .getMostSignificantBits() + (shortUuid << 32);
+                .getMostSignificantBits() + (shortUuid << 32);
         long lsb = BASE_UUID.getUuid()
-                            .getLeastSignificantBits();
+                .getLeastSignificantBits();
         return new ParcelUuid(new UUID(msb, lsb));
     }
 
@@ -321,13 +337,13 @@ public final class BluetoothUuid {
 
         // Construct a 128 bit UUID.
         long msb = uuid.getUuid()
-                       .getMostSignificantBits();
+                .getMostSignificantBits();
         long lsb = uuid.getUuid()
-                       .getLeastSignificantBits();
+                .getLeastSignificantBits();
 
         byte[] uuidBytes = new byte[UUID_BYTES_128_BIT];
         ByteBuffer buf = ByteBuffer.wrap(uuidBytes)
-                                   .order(ByteOrder.LITTLE_ENDIAN);
+                .order(ByteOrder.LITTLE_ENDIAN);
         buf.putLong(8, msb);
         buf.putLong(0, lsb);
         return uuidBytes;
@@ -342,7 +358,7 @@ public final class BluetoothUuid {
     public static boolean is16BitUuid(ParcelUuid parcelUuid) {
         UUID uuid = parcelUuid.getUuid();
         if (uuid.getLeastSignificantBits() != BASE_UUID.getUuid()
-                                                       .getLeastSignificantBits()) {
+                .getLeastSignificantBits()) {
             return false;
         }
         return ((uuid.getMostSignificantBits() & 0xFFFF0000FFFFFFFFL) == 0x1000L);
@@ -358,7 +374,7 @@ public final class BluetoothUuid {
     public static boolean is32BitUuid(ParcelUuid parcelUuid) {
         UUID uuid = parcelUuid.getUuid();
         if (uuid.getLeastSignificantBits() != BASE_UUID.getUuid()
-                                                       .getLeastSignificantBits()) {
+                .getLeastSignificantBits()) {
             return false;
         }
         if (is16BitUuid(parcelUuid)) {
