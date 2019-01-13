@@ -33,8 +33,8 @@ import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.central.callback.BleBaseCallback;
 import com.suhen.android.libble.central.callback.BleMtuChangedCallback;
 import com.suhen.android.libble.central.callback.BleRssiCallback;
-import com.suhen.android.libble.central.permission.PermissionWizard;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
+import com.suhen.android.libble.permission.PermissionWizard;
 import com.yanzhenjie.permission.Permission;
 
 import java.lang.reflect.Method;

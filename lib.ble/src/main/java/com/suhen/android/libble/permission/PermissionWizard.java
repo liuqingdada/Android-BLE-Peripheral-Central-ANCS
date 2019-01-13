@@ -1,4 +1,4 @@
-package com.suhen.android.libble.central.permission;
+package com.suhen.android.libble.permission;
 
 import android.content.Context;
 import android.support.v7.app.AlertDialog;
