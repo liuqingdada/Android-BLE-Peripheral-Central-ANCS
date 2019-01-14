@@ -1,11 +1,15 @@
 package com.suhen.android.libble.simple;
 
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.util.Log;
 
 import com.suhen.android.libble.central.BleCentral;
+import com.suhen.android.libble.central.sdk.BleScanRecord;
+
+import java.util.List;
 
 /**
  * Created by suhen
@@ -24,18 +28,8 @@ public class SimpleBleCentral extends BleCentral {
     }
 
     @Override
-    protected String scanDeviceName() {
+    protected List<ScanFilter> scanFilters() {
         return null;
-    }
-
-    @Override
-    protected int manufacturerId() {
-        return 0xFFFF;
-    }
-
-    @Override
-    protected byte[] manufacturerData() {
-        return new byte[0];
     }
 
     @Override
@@ -49,27 +43,22 @@ public class SimpleBleCentral extends BleCentral {
     }
 
     @Override
-    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName, byte[] manufacturerData) {
-        super.onScannedPeripheral(bluetoothDevice, rssi, deviceName, manufacturerData);
+    protected void onScannedPeripheral(int callbackType, ScanResult result, BleScanRecord bleScanRecord) {
     }
 
     @Override
     protected void onConnectStarted(BluetoothGatt bluetoothGatt) {
-
     }
 
     @Override
     protected void onConnected(BluetoothGatt bluetoothGatt, int status) {
-
     }
 
     @Override
     protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback) {
-
     }
 
     @Override
     protected void onDisconnected(BluetoothGatt bluetoothGatt) {
-
     }
 }

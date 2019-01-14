@@ -13,7 +13,6 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
@@ -30,6 +29,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.suhen.android.libble.BLE;
+import com.suhen.android.libble.central.callback.BaseCentral;
 import com.suhen.android.libble.central.callback.BleBaseCallback;
 import com.suhen.android.libble.central.callback.BleMtuChangedCallback;
 import com.suhen.android.libble.central.callback.BleRssiCallback;
@@ -48,47 +48,61 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * 2018/7/26.
  * Email: suhen0420@163.com
  */
-public abstract class BleCentral implements ICentral {
+public abstract class BleCentral extends BaseCentral implements ICentral {
     protected static final String TAG = BleCentral.class.getSimpleName();
-    private static final int DEFAULT_SCAN_TIMEOUT = 60;
-
-    protected Context mContext;
 
     private BluetoothStatusReceiver mBluetoothStatusReceiver;
     private Toast mToast;
 
-    private BluetoothManager mBluetoothManager;
-
-    private BluetoothAdapter mBluetoothAdapter;
-
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private BluetoothLeScanner mLeScanner;
 
-    protected BluetoothGatt mBluetoothGatt;
-    protected BluetoothDevice mConnectionDevice;
-    protected Set<BleBaseCallback> mBleBaseCallbacks = new ConcurrentSkipListSet<>();
-    protected BleRssiCallback mBleRssiCallback;
-    protected BleMtuChangedCallback mBleMtuChangedCallback;
-
-    private HandlerThread mCentralThread;
+    private HandlerThread mGattCallbackThread;
     private static final int MSG_BLE_LOLLIPOP_SCAN_STOP = 0xFFFF;
     private static final int MSG_BLE_SCAN_STOP = 0xFFFE;
-    private Handler mHandler;
+    private Handler mGattCallbackHandler;
+
+    private Set<BleBaseCallback> mBleBaseCallbacks = new ConcurrentSkipListSet<>();
+    private BleRssiCallback mBleRssiCallback;
+    private BleMtuChangedCallback mBleMtuChangedCallback;
+
+    private HandlerThread mGattSendDataThread;
+    private Handler mGattSendDataHandler;
+
+    protected Context mContext;
+
+    protected BluetoothManager mBluetoothManager;
+    protected BluetoothAdapter mBluetoothAdapter;
+
+    protected BluetoothGatt mBluetoothGatt;
+    protected BluetoothDevice mConnectionDevice;
 
     protected BleCentral(Context context) {
         mContext = context;
-        mCentralThread = new HandlerThread("central_thread");
-        mCentralThread.start();
-        mHandler = new Handler(mCentralThread.getLooper()) {
+        mGattCallbackThread = new HandlerThread("gatt_callback_looper_thread");
+        mGattCallbackThread.start();
+
+        mGattSendDataThread = new HandlerThread("gatt_send_data_looper_thread");
+        mGattSendDataThread.start();
+
+        mGattCallbackHandler = new Handler(mGattCallbackThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                BleCentral.this.handleMessage(msg);
+                handleGattCallbackMessage(msg);
+            }
+        };
+
+        mGattSendDataHandler = new Handler(mGattSendDataThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                handleGattSendDataMessage(msg);
             }
         };
     }
 
-    private void handleMessage(Message msg) {
+    private void handleGattCallbackMessage(Message msg) {
         switch (msg.what) {
             case MSG_BLE_LOLLIPOP_SCAN_STOP:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -102,6 +116,9 @@ public abstract class BleCentral implements ICentral {
                 onScanFinished();
                 break;
         }
+    }
+
+    private void handleGattSendDataMessage(Message msg) {
     }
 
     @SuppressLint("ShowToast")
@@ -205,11 +222,11 @@ public abstract class BleCentral implements ICentral {
             stop();
 
             // connect failed
-            mHandler.post(() -> onConnectFailed(mBluetoothGatt, 0, false));
+            mGattCallbackHandler.post(() -> onConnectFailed(mBluetoothGatt, 0, false));
 
         } else {
             // connect started
-            mHandler.post(() -> onConnectStarted(mBluetoothGatt));
+            mGattCallbackHandler.post(() -> onConnectStarted(mBluetoothGatt));
         }
 
 
@@ -229,39 +246,14 @@ public abstract class BleCentral implements ICentral {
     @Override
     public void onDestroy() {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
-        mCentralThread.quitSafely();
+        mGattCallbackThread.quitSafely();
+        mGattSendDataThread.quitSafely();
     }
 
     @Override
     public void sendBleBytes(byte[] bytes) {
 
     }
-
-    /**
-     * default timeout is 60s
-     */
-    protected abstract int scanTimeout();
-
-    protected abstract String scanDeviceName();
-
-    protected abstract int manufacturerId();
-
-    protected abstract byte[] manufacturerData();
-
-    protected abstract void onScanStarted();
-
-    protected abstract void onScanFinished();
-
-    protected void onScannedPeripheral(BluetoothDevice bluetoothDevice, int rssi, String deviceName, byte[] manufacturerData) {
-    }
-
-    protected abstract void onConnectStarted(BluetoothGatt bluetoothGatt);
-
-    protected abstract void onConnected(BluetoothGatt bluetoothGatt, int status);
-
-    protected abstract void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback);
-
-    protected abstract void onDisconnected(BluetoothGatt bluetoothGatt);
 
     private class BluetoothStatusReceiver extends BroadcastReceiver {
 
@@ -315,58 +307,44 @@ public abstract class BleCentral implements ICentral {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void scanLollipop() {
         List<ScanFilter> filters = null;
-
-        String deviceName = scanDeviceName();
-        byte[] manufacturerData = manufacturerData();
-
-        if (deviceName != null && manufacturerData != null && manufacturerData.length > 0) {
-            filters = new ArrayList<>();
-
-            ScanFilter scanFilter = new ScanFilter.Builder()
-                    .setDeviceName(deviceName)
-                    .setManufacturerData(manufacturerId(), manufacturerData)
-                    .build();
-
-            filters.add(scanFilter);
+        List<ScanFilter> scanFilters = scanFilters();
+        if (scanFilters != null) {
+            filters = new ArrayList<>(scanFilters);
         }
 
         mLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         mLeScanner.startScan(filters, new ScanSettings.Builder().build(), mLeLollipopCallback);
         onScanStarted();
 
-        mHandler.removeMessages(MSG_BLE_LOLLIPOP_SCAN_STOP);
+        mGattCallbackHandler.removeMessages(MSG_BLE_LOLLIPOP_SCAN_STOP);
         int scanTime = scanTimeout() <= 0 ? DEFAULT_SCAN_TIMEOUT : scanTimeout();
-        mHandler.sendEmptyMessageDelayed(MSG_BLE_LOLLIPOP_SCAN_STOP, scanTime);
+        mGattCallbackHandler.sendEmptyMessageDelayed(MSG_BLE_LOLLIPOP_SCAN_STOP, scanTime);
     }
 
     private void scanJellyBeanMr2() {
         mBluetoothAdapter.startLeScan(mLeCallback);
         onScanStarted();
 
-        mHandler.removeMessages(MSG_BLE_SCAN_STOP);
+        mGattCallbackHandler.removeMessages(MSG_BLE_SCAN_STOP);
         int scanTime = scanTimeout() <= 0 ? DEFAULT_SCAN_TIMEOUT : scanTimeout();
-        mHandler.sendEmptyMessageDelayed(MSG_BLE_SCAN_STOP, scanTime);
+        mGattCallbackHandler.sendEmptyMessageDelayed(MSG_BLE_SCAN_STOP, scanTime);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private ScanCallback mLeLollipopCallback = new ScanCallback() {
+        /**
+         * Callback when a BLE advertisement has been found.
+         *
+         * @param callbackType Determines how this callback was triggered.
+         *                     Could be one of {@link ScanSettings#CALLBACK_TYPE_ALL_MATCHES},
+         *                     {@link ScanSettings#CALLBACK_TYPE_FIRST_MATCH} or
+         *                     {@link ScanSettings#CALLBACK_TYPE_MATCH_LOST}
+         * @param result A Bluetooth LE scan result.
+         */
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            ScanRecord scanRecord = result.getScanRecord();
-            if (scanRecord != null) {
-
-                BluetoothDevice device = result.getDevice();
-
-                int rssi = result.getRssi();
-
-                String deviceName = scanRecord.getDeviceName();
-
-                byte[] manufacturerData = scanRecord.getManufacturerSpecificData(manufacturerId());
-
-                mHandler.post(() -> onScannedPeripheral(device, rssi, deviceName, manufacturerData));
-
-            }
+            mGattCallbackHandler.post(() -> onScannedPeripheral(callbackType, result, null));
         }
 
         @Override
@@ -381,15 +359,8 @@ public abstract class BleCentral implements ICentral {
     };
 
     private BluetoothAdapter.LeScanCallback mLeCallback = (device, rssi, scanRecord) -> {
-        BleScanRecord record = BleScanRecord.parseFromBytes(scanRecord);
-
-        if (record != null) {
-            String deviceName = record.getDeviceName();
-
-            byte[] manufacturerData = record.getManufacturerSpecificData(manufacturerId());
-
-            mHandler.post(() -> onScannedPeripheral(device, rssi, deviceName, manufacturerData));
-        }
+        BleScanRecord bleScanRecord = BleScanRecord.parseFromBytes(scanRecord);
+        mGattCallbackHandler.post(() -> onScannedPeripheral(0, null, bleScanRecord));
     };
 
     private BluetoothGattCallback mBluetoothGattCallback = new BluetoothGattCallback() {
@@ -407,7 +378,7 @@ public abstract class BleCentral implements ICentral {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             Log.d(TAG, "onConnectionStateChange: status = " + status + ", newState = " + newState);
             mBluetoothGatt = gatt;
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.i(TAG, "onConnectionStateChange: STATE_CONNECTED");
 
@@ -440,7 +411,7 @@ public abstract class BleCentral implements ICentral {
             Log.d(TAG, "onServicesDiscovered: status = " + status);
             mBluetoothGatt = gatt;
 
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     onConnected(gatt, status);
 
@@ -454,7 +425,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.d(TAG, "onCharacteristicRead: characteristic = " + characteristic + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
                     if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
@@ -467,7 +438,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             Log.d(TAG, "onCharacteristicWrite: characteristic = " + characteristic + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
                     if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
@@ -480,7 +451,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             Log.d(TAG, "onCharacteristicChanged: characteristic = " + characteristic);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
                     if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
@@ -493,7 +464,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             Log.d(TAG, "onDescriptorRead: descriptor = " + descriptor + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
                     if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
@@ -506,7 +477,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             Log.d(TAG, "onDescriptorWrite: descriptor = " + descriptor + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
                     if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
@@ -524,7 +495,7 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             Log.d(TAG, "onReadRemoteRssi: rssi = " + rssi + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 if (mBleRssiCallback != null) {
                     mBleRssiCallback.onReadRemoteRssi(rssi, status);
                 }
@@ -534,13 +505,31 @@ public abstract class BleCentral implements ICentral {
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             Log.d(TAG, "onMtuChanged: mtu = " + mtu + ", status = " + status);
-            mHandler.post(() -> {
+            mGattCallbackHandler.post(() -> {
                 if (mBleMtuChangedCallback != null) {
                     mBleMtuChangedCallback.onMtuChanged(mtu, status);
                 }
             });
         }
     };
+
+    private synchronized void stop() {
+        disconnectGatt();
+        refreshDeviceCache();
+        closeBluetoothGatt();
+    }
+
+    private void openBTByUser() {
+        if (!mBluetoothAdapter.isEnabled()) {
+            permissionDenied();
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            mContext.startActivity(enableBtIntent);
+        }
+    }
+
+    private void permissionDenied() {
+        Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG).show();
+    }
 
     private synchronized void disconnectGatt() {
         if (mBluetoothGatt != null) {
@@ -565,23 +554,5 @@ public abstract class BleCentral implements ICentral {
         if (mBluetoothGatt != null) {
             mBluetoothGatt.close();
         }
-    }
-
-    private synchronized void stop() {
-        disconnectGatt();
-        refreshDeviceCache();
-        closeBluetoothGatt();
-    }
-
-    private void openBTByUser() {
-        if (!mBluetoothAdapter.isEnabled()) {
-            permissionDenied();
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            mContext.startActivity(enableBtIntent);
-        }
-    }
-
-    private void permissionDenied() {
-        Toast.makeText(mContext, BLE.BT_NO_PERMISSION, Toast.LENGTH_LONG).show();
     }
 }
