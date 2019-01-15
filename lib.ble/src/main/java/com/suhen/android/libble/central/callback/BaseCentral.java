@@ -1,14 +1,15 @@
 package com.suhen.android.libble.central.callback;
 
-import android.annotation.TargetApi;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.os.Build;
+import android.support.annotation.RequiresApi;
 
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by andy
@@ -17,14 +18,26 @@ import java.util.List;
  */
 public abstract class BaseCentral {
     protected static final int DEFAULT_SCAN_TIMEOUT = 60;
+    protected static final int DEFAULT_RECONNECT_COUNT = 0;
 
     /**
-     * default timeout is 60s
+     * @return default timeout is 60s
+     * unit is {@link java.util.concurrent.TimeUnit#SECONDS}
      */
     protected abstract int scanTimeout();
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    protected abstract List<ScanFilter> scanFilters();
+    /**
+     * @return default reconnect count is 0
+     */
+    protected abstract int tryReconnectCount();
+
+    protected abstract boolean isFactoryReset();
+
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    protected abstract UUID[] scanFilters();
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    protected abstract List<ScanFilter> scanLollipopFilters();
 
     protected abstract void onScanStarted();
 

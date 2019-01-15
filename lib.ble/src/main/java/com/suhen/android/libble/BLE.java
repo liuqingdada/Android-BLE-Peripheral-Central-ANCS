@@ -1,7 +1,10 @@
 package com.suhen.android.libble;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 
 import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.peripheral.BlePeripheral;
@@ -15,12 +18,8 @@ import java.lang.reflect.Constructor;
  * Email: 1239604859@qq.com
  * <p>
  * Generally, peripheral and central devices will only have an instance,
- * because peripheral device can only be connected to a central equipment at the same time.
  * <p>
  * <p>
- * <p>
- * If you want to create multiple instances central devices,
- * please use {@link BLE#newCentral(Class, Context)}, peripheral in the same way.
  */
 public final class BLE {
     /**
@@ -46,36 +45,6 @@ public final class BLE {
     public static final String CHAR_READ_UUID = "4622c048-1cd2-4211-adc5-89df72c789ec";
 
     /**
-     * To get the only one peripheral instance
-     */
-    public synchronized static IPeripheral getPeripheral(Class<? extends BlePeripheral> clazz, Context context) throws Exception {
-        if (PERIPHERAL == null) {
-            Constructor<? extends BlePeripheral> constructor = clazz.getConstructor(Context.class);
-            constructor.setAccessible(true);
-            PERIPHERAL = constructor.newInstance(context);
-        }
-
-        return PERIPHERAL;
-    }
-
-    /**
-     * To get the only one central instance
-     */
-    public synchronized static ICentral getCentral(Class<? extends ICentral> clazz, Context context) throws Exception {
-        if (CENTRAL == null) {
-            Constructor<? extends ICentral> constructor = clazz.getConstructor(Context.class);
-            constructor.setAccessible(true);
-            CENTRAL = constructor.newInstance(context);
-        }
-
-        return CENTRAL;
-    }
-
-    private static volatile IPeripheral PERIPHERAL;
-
-    private static volatile ICentral CENTRAL;
-
-    /**
      * Create a new central instance.
      */
     public synchronized static ICentral newCentral(Class<? extends ICentral> clazz, Context context) throws Exception {
@@ -91,5 +60,24 @@ public final class BLE {
         Constructor<? extends BlePeripheral> constructor = clazz.getConstructor(Context.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context);
+    }
+
+    /**
+     * is support peripheral or central
+     */
+    public static boolean isSupportBle(Context context) {
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+
+            BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+            if (bluetoothManager == null) {
+                return false;
+            }
+
+            BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+
+            return bluetoothAdapter != null;
+        } else {
+            return false;
+        }
     }
 }

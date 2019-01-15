@@ -4,8 +4,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 
 import com.suhen.android.libble.central.callback.BleBaseCallback;
-import com.suhen.android.libble.central.callback.BleMtuChangedCallback;
-import com.suhen.android.libble.central.callback.BleRssiCallback;
 
 /**
  * Created by liuqing
@@ -14,8 +12,6 @@ import com.suhen.android.libble.central.callback.BleRssiCallback;
  */
 public interface ICentral {
     void onCreate();
-
-    boolean isSupportCentral();
 
     /**
      * init and start scan
@@ -27,11 +23,9 @@ public interface ICentral {
      */
     void scan();
 
+    void stopScan();
+
     void addBleBaseCallback(BleBaseCallback bleBaseCallback);
-
-    void setBleRssiCallback(BleRssiCallback bleRssiCallback);
-
-    void setBleMtuChangedCallback(BleMtuChangedCallback bleMtuChangedCallback);
 
     BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy);
 

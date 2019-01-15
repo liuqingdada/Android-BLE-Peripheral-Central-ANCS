@@ -2,6 +2,7 @@ package com.suhen.android.appcentral.service;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
@@ -9,20 +10,24 @@ import android.util.Log;
 import com.suhen.android.appcentral.R;
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.central.ICentral;
+import com.suhen.android.libble.permission.PermissionWizard;
 import com.suhen.android.libble.simple.NotificationWizard;
-import com.suhen.android.libble.simple.SimpleBleCentral;
 
 public class SimpleBleCentralService extends Service {
     private static final String TAG = SimpleBleCentralService.class.getSimpleName();
     private static final int FOREGROUND_ID = 0xFFFE;
     private ICentral mCentral;
+    private BleCentralBinder mBinder;
 
     public SimpleBleCentralService() {
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (mBinder == null) {
+            mBinder = new BleCentralBinder();
+        }
+        return mBinder;
     }
 
     @Override
@@ -31,9 +36,8 @@ public class SimpleBleCentralService extends Service {
         super.onCreate();
         startForegroound();
 
-
         try {
-            mCentral = BLE.getCentral(SimpleBleCentral.class, this);
+            mCentral = BLE.newCentral(BleCentralImpl.class, this);
 
             mCentral.onCreate();
 
@@ -42,6 +46,9 @@ public class SimpleBleCentralService extends Service {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        boolean locationEnable = PermissionWizard.isLocationEnable(this);
+        Log.d(TAG, "onCreate: locationEnable = " + locationEnable);
     }
 
     @Override
@@ -63,5 +70,11 @@ public class SimpleBleCentralService extends Service {
         Log.d(TAG, "onDestroy: ");
         super.onDestroy();
         mCentral.onDestroy();
+    }
+
+    public class BleCentralBinder extends Binder {
+        public ICentral getBleCentral() {
+            return mCentral;
+        }
     }
 }

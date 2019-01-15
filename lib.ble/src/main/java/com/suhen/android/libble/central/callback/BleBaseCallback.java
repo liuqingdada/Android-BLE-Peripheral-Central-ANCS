@@ -42,6 +42,12 @@ public abstract class BleBaseCallback {
     public void onDescriptorWrite(byte[] value, int status) {
     }
 
+    public void onReadRemoteRssi(int rssi, int status) {
+    }
+
+    public void onMtuChanged(int mtu, int status) {
+    }
+
     public String getUUID() {
         return mUUID;
     }

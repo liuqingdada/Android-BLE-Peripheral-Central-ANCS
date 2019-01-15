@@ -8,8 +8,6 @@ package com.suhen.android.libble.peripheral;
 public interface IPeripheral {
     void onCreate();
 
-    boolean isSupportPeripheral();
-
     void setup();
 
     void preparePair();

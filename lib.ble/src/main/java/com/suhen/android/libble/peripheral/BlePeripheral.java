@@ -19,7 +19,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
@@ -66,24 +65,6 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
         mContext.registerReceiver(mBluetoothStatusReceiver, bleIntentFilter);
 
         mToast = Toast.makeText(mContext, BLE.NOT_SUPPORT_PERIPHERAL, Toast.LENGTH_LONG);
-    }
-
-    @Override
-    public boolean isSupportPeripheral() {
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-
-            mBluetoothManager = (BluetoothManager) mContext.getSystemService(
-                    Context.BLUETOOTH_SERVICE);
-            if (mBluetoothManager == null) {
-                return false;
-            }
-
-            mBluetoothAdapter = mBluetoothManager.getAdapter();
-
-            return mBluetoothAdapter != null;
-        } else {
-            return false;
-        }
     }
 
     @Override
@@ -253,17 +234,12 @@ public abstract class BlePeripheral extends BluetoothGattServerCallback implemen
 
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         Log.e(TAG, "bluetooth TURNING_OFF");
-                        if (isSupportPeripheral()) {
-                            stop();
-                        }
+                        stop();
                         break;
 
                     case BluetoothAdapter.STATE_ON:
                         Log.e(TAG, "bluetooth ON");
-
-                        if (isSupportPeripheral()) {
-                            start();
-                        }
+                        start();
 
                         break;
 

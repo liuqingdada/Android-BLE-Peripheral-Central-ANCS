@@ -15,4 +15,6 @@
     <string name="message_overlay_failed">Your phone is not allowed us to draw on other applications.</string>
 
     <string name="message_error_storage">Please check the external storage device.</string>
+
+    <string name="message_gatt_error">请尝试重启蓝牙</string>
 </resources>

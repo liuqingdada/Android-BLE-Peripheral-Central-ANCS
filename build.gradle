@@ -64,7 +64,7 @@ ext {
     rxbinding = "2.1.1"
     rxbus = "1.0.2"
     rxrelay = "2.0.0"
-    permissions = "2.0.0-rc11"
+    permissions = "2.0.0-rc12"
 
     // http
     retrofitVersion = "2.4.0"

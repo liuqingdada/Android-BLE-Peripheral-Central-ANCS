@@ -109,7 +109,7 @@ public class PermissionWizard {
         }
     }
 
-    private static boolean isLocationEnable(Context context) {
+    public static boolean isLocationEnable(Context context) {
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         boolean networkProvider = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         boolean gpsProvider = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
