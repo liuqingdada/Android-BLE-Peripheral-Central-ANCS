@@ -2,6 +2,9 @@ package com.suhen.android.appcentral.service;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
@@ -10,30 +13,32 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.suhen.android.libble.central.sdk.BleScanRecord;
-import com.suhen.android.libble.simple.SimpleBleCentral;
+import com.suhen.android.libble.simple.SimpleBleCentralBle;
 
 /**
  * Created by andy
  * 2019/1/15.
  * Email: 1239604859@qq.com
  */
-public class BleCentralImpl extends SimpleBleCentral {
-    private static final String TAG = "BleCentralImpl";
+public class BleCentralImplBle extends SimpleBleCentralBle {
+    private static final String TAG = "BleCentralImplBle";
 
-    protected BleCentralImpl(Context context) {
+    protected BleCentralImplBle(Context context) {
         super(context);
     }
 
     @Override
     protected void onScanStarted() {
-        super.onScanStarted();
-        Log.d(TAG, "onScanStarted: ");
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onScanStarted: ");
+        });
     }
 
     @Override
     protected void onScanFinished() {
-        super.onScanFinished();
-        Log.d(TAG, "onScanFinished: ");
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onScanFinished: ");
+        });
     }
 
     @Override
@@ -65,25 +70,38 @@ public class BleCentralImpl extends SimpleBleCentral {
 
     @Override
     protected void onConnectStarted(BluetoothGatt bluetoothGatt) {
-        super.onConnectStarted(bluetoothGatt);
-        Log.d(TAG, "onConnectStarted: ");
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onConnectStarted: ");
+        });
     }
 
     @Override
     protected void onConnected(BluetoothGatt bluetoothGatt, int status) {
-        super.onConnected(bluetoothGatt, status);
-        Log.d(TAG, "onConnected: ");
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onConnected: ");
+            for (BluetoothGattService service : bluetoothGatt.getServices()) {
+                Log.i(TAG, "onConnected: " + service.getUuid());
+                for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
+                    Log.d(TAG, "onConnected: " + characteristic.getUuid());
+                    for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
+                        Log.v(TAG, "onConnected: " + descriptor.getUuid());
+                    }
+                }
+            }
+        });
     }
 
     @Override
-    protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback) {
-        super.onConnectFailed(bluetoothGatt, status, isGattCallback);
-        Log.d(TAG, "onConnectFailed: ");
+    protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status) {
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onConnectFailed: ");
+        });
     }
 
     @Override
     protected void onDisconnected(BluetoothGatt bluetoothGatt) {
-        super.onDisconnected(bluetoothGatt);
-        Log.d(TAG, "onDisconnected: ");
+        getBlockingService().execute(() -> {
+            Log.d(TAG, "onDisconnected: ");
+        });
     }
 }

@@ -1,4 +1,4 @@
-package com.suhen.android.libble.central.callback;
+package com.suhen.android.libble.central.base;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.le.ScanFilter;
@@ -6,6 +6,7 @@ import android.bluetooth.le.ScanResult;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 
+import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 
 import java.util.List;
@@ -16,20 +17,14 @@ import java.util.UUID;
  * 2019/1/14.
  * Email: 1239604859@qq.com
  */
-public abstract class BaseCentral {
+public abstract class BleBaseCentral {
     protected static final int DEFAULT_SCAN_TIMEOUT = 60;
-    protected static final int DEFAULT_RECONNECT_COUNT = 0;
 
     /**
      * @return default timeout is 60s
      * unit is {@link java.util.concurrent.TimeUnit#SECONDS}
      */
     protected abstract int scanTimeout();
-
-    /**
-     * @return default reconnect count is 0
-     */
-    protected abstract int tryReconnectCount();
 
     protected abstract boolean isFactoryReset();
 
@@ -54,7 +49,10 @@ public abstract class BaseCentral {
 
     protected abstract void onConnected(BluetoothGatt bluetoothGatt, int status);
 
-    protected abstract void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback);
+    protected abstract void onConnectFailed(BluetoothGatt bluetoothGatt, int status);
 
     protected abstract void onDisconnected(BluetoothGatt bluetoothGatt);
+
+    protected abstract class AbstractOperator implements ICentral.IOperator {
+    }
 }

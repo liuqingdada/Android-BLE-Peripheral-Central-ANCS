@@ -7,7 +7,7 @@ import android.content.Context;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 
-import com.suhen.android.libble.central.BleCentral;
+import com.suhen.android.libble.central.BleCentralBle;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 
 import java.util.List;
@@ -22,22 +22,16 @@ import java.util.concurrent.TimeUnit;
  * 18-8-5.
  * Email: 1239604859@qq.com
  */
-public class SimpleBleCentral extends BleCentral {
+public class SimpleBleCentralBle extends BleCentralBle {
     private volatile ExecutorService mExecutorService;
 
-    protected SimpleBleCentral(Context context) {
+    protected SimpleBleCentralBle(Context context) {
         super(context);
-        mExecutorService = getBlockingService();
     }
 
     @Override
     protected int scanTimeout() {
         return DEFAULT_SCAN_TIMEOUT;
-    }
-
-    @Override
-    protected int tryReconnectCount() {
-        return DEFAULT_RECONNECT_COUNT;
     }
 
     @Override
@@ -78,7 +72,7 @@ public class SimpleBleCentral extends BleCentral {
     }
 
     @Override
-    protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status, boolean isGattCallback) {
+    protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status) {
     }
 
     @Override
@@ -88,10 +82,10 @@ public class SimpleBleCentral extends BleCentral {
     protected synchronized ExecutorService getBlockingService() {
         if (mExecutorService == null || mExecutorService.isShutdown() || mExecutorService.isTerminated()) {
             mExecutorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(Runtime.getRuntime().availableProcessors() * 2 + 2), (r, exe) -> {
+                    new LinkedBlockingQueue<>(Runtime.getRuntime().availableProcessors() * 2 + 2), (r, exec) -> {
                 try {
-                    if (!exe.isShutdown()) {
-                        exe.getQueue().put(r);
+                    if (!exec.isShutdown()) {
+                        exec.getQueue().put(r);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();

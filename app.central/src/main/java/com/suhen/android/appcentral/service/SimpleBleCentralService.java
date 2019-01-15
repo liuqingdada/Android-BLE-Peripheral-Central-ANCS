@@ -37,7 +37,7 @@ public class SimpleBleCentralService extends Service {
         startForegroound();
 
         try {
-            mCentral = BLE.newCentral(BleCentralImpl.class, this);
+            mCentral = BLE.newCentral(BleCentralImplBle.class, this);
 
             mCentral.onCreate();
 

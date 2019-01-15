@@ -30,8 +30,8 @@ import android.widget.Toast;
 
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.R;
-import com.suhen.android.libble.central.callback.BaseCentral;
 import com.suhen.android.libble.central.callback.BleBaseCallback;
+import com.suhen.android.libble.central.base.BleBaseCentral;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 import com.suhen.android.libble.permission.PermissionWizard;
 import com.yanzhenjie.permission.Permission;
@@ -48,8 +48,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * 2018/7/26.
  * Email: suhen0420@163.com
  */
-public abstract class BleCentral extends BaseCentral implements ICentral {
-    private static final String TAG = BleCentral.class.getSimpleName();
+public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
+    private static final String TAG = BleCentralBle.class.getSimpleName();
     protected static final int TRANSPORT_AUTO = 0;
     protected static final int PHY_LE_1M_MASK = 1;
 
@@ -60,13 +60,12 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
 
     private HandlerThread mGattCallbackThread;
     private static final int MSG_BLE_SCAN_STOP = 0xFFFF;
-    private static final int MSG_BLE_RECONNECT = 0xFFFE;
     private Handler mGattCallbackHandler;
 
     private Set<BleBaseCallback> mBleBaseCallbacks = new ConcurrentSkipListSet<>();
 
-    private HandlerThread mGattSendDataThread;
-    private Handler mGattSendDataHandler;
+    private HandlerThread mGattReadWriteThread;
+    private Handler mGattReadWriteHandler;
 
     protected Context mContext;
 
@@ -74,21 +73,15 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
     protected BluetoothAdapter mBluetoothAdapter;
 
     protected BluetoothGatt mBluetoothGatt;
-    //
     protected BluetoothDevice mConnectionDevice;
-    private int reconnectCount;
-    private boolean autoConnect;
-    private int transport = TRANSPORT_AUTO;
-    private int phy = PHY_LE_1M_MASK;
-    //
 
-    protected BleCentral(Context context) {
+    protected BleCentralBle(Context context) {
         mContext = context;
         mGattCallbackThread = new HandlerThread("gatt_callback_looper_thread");
         mGattCallbackThread.start();
 
-        mGattSendDataThread = new HandlerThread("gatt_send_data_looper_thread");
-        mGattSendDataThread.start();
+        mGattReadWriteThread = new HandlerThread("gatt_read_write_looper_thread");
+        mGattReadWriteThread.start();
 
         mGattCallbackHandler = new Handler(mGattCallbackThread.getLooper()) {
             @Override
@@ -98,13 +91,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             }
         };
 
-        mGattSendDataHandler = new Handler(mGattSendDataThread.getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                super.handleMessage(msg);
-                handleGattSendDataMessage(msg);
-            }
-        };
+        mGattReadWriteHandler = new Handler(mGattReadWriteThread.getLooper());
     }
 
     private void handleGattCallbackMessage(Message msg) {
@@ -112,14 +99,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             case MSG_BLE_SCAN_STOP:
                 stopLeScan();
                 break;
-
-            case MSG_BLE_RECONNECT:
-                tryReconnect();
-                break;
         }
-    }
-
-    private void handleGattSendDataMessage(Message msg) {
     }
 
     @SuppressLint("ShowToast")
@@ -183,9 +163,6 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
     @Override
     public synchronized BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy) {
         mConnectionDevice = bluetoothDevice;
-        this.autoConnect = autoConnect;
-        this.transport = transport;
-        this.phy = phy;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mBluetoothGatt = bluetoothDevice.connectGatt(mContext, autoConnect, mBluetoothGattCallback, transport);
@@ -201,7 +178,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             stop();
 
             // connect failed
-            mGattCallbackHandler.post(() -> onConnectFailed(mBluetoothGatt, 0, false));
+            mGattCallbackHandler.post(() -> onConnectFailed(mBluetoothGatt, CONNECT_ERROR_GATT_UNKNOWN));
 
         } else {
             // connect started
@@ -213,38 +190,28 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
     }
 
     @Override
-    public void preparePair() {
-
+    public boolean isConnected() {
+        if (mBluetoothManager != null && mConnectionDevice != null) {
+            return mBluetoothManager.getConnectionState(mConnectionDevice, BluetoothProfile.GATT) == BluetoothProfile.STATE_CONNECTED;
+        }
+        return false;
     }
 
     @Override
-    public boolean isConnected() {
-        return false;
+    public IOperator newOperator(String serviceUUID, String characteristicUUID) {
+        return new GattServiceOperator(serviceUUID, characteristicUUID);
+    }
+
+    @Override
+    public IOperator newOperator(String serviceUUID, String characteristicUUID, String descriptorUUID) {
+        return new GattServiceOperator(serviceUUID, characteristicUUID, descriptorUUID);
     }
 
     @Override
     public void onDestroy() {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
         mGattCallbackThread.quitSafely();
-        mGattSendDataThread.quitSafely();
-    }
-
-    @Override
-    public void sendBleBytes(byte[] bytes) {
-
-    }
-
-    private void tryReconnect() {
-        if (mConnectionDevice != null) {
-            if (reconnectCount > 0) {
-                reconnectCount--;
-                connect(mConnectionDevice, autoConnect, transport, phy);
-            } else {
-                if (isFactoryReset()) {
-                    factoryReset();
-                }
-            }
-        }
+        mGattReadWriteThread.quitSafely();
     }
 
     private class BluetoothStatusReceiver extends BroadcastReceiver {
@@ -279,7 +246,6 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
     }
 
     private synchronized void start() {
-        reconnectCount = tryReconnectCount();
         PermissionWizard.requestPermission(mContext, new PermissionWizard.PermissionCallback() {
             @Override
             public void onGranted() {
@@ -389,7 +355,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
                     boolean discoverServices = mBluetoothGatt.discoverServices();
                     if (!discoverServices) {
                         stop();
-                        onConnectFailed(gatt, status, true);
+                        onConnectFailed(gatt, status);
                     }
 
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -405,8 +371,10 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
 
                 } else {
                     Log.i(TAG, "onConnectionStateChange: ERROR");
-
-                    mGattCallbackHandler.sendEmptyMessage(MSG_BLE_RECONNECT);
+                    if (isFactoryReset()) {
+                        factoryReset();
+                    }
+                    onConnectFailed(gatt, newState);
                 }
             });
         }
@@ -418,12 +386,11 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
 
             mGattCallbackHandler.post(() -> {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    reconnectCount = tryReconnectCount();
                     onConnected(gatt, status);
 
                 } else {
                     stop();
-                    onConnectFailed(gatt, status, true);
+                    onConnectFailed(gatt, status);
                 }
             });
         }
@@ -469,7 +436,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
 
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorRead: descriptor = " + descriptor + ", status = " + status);
+            Log.d(TAG, "onDescriptorRead: mBluetoothGattDescriptor = " + descriptor + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
@@ -482,7 +449,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            Log.d(TAG, "onDescriptorWrite: descriptor = " + descriptor + ", status = " + status);
+            Log.d(TAG, "onDescriptorWrite: mBluetoothGattDescriptor = " + descriptor + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
@@ -576,51 +543,49 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
         }
     }
 
-    /**
-     *
-     */
-    public class OperateGattService {
-        private BluetoothGattService mGattService;
-        private BluetoothGattCharacteristic mCharacteristic;
-        private String mDescriptor;
+    protected class GattServiceOperator extends AbstractOperator {
+        private BluetoothGattService mBluetoothGattService;
+        private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
+        private BluetoothGattDescriptor mBluetoothGattDescriptor;
 
-        public OperateGattService(String serviceUUID, String characteristicUUID) {
+        private GattServiceOperator(String serviceUUID, String characteristicUUID) {
             if (serviceUUID != null) {
-                mGattService = mBluetoothGatt.getService(UUID.fromString(serviceUUID));
+                mBluetoothGattService = mBluetoothGatt.getService(UUID.fromString(serviceUUID));
             }
             if (characteristicUUID != null) {
-                mCharacteristic = mGattService.getCharacteristic(UUID.fromString(characteristicUUID));
+                mBluetoothGattCharacteristic = mBluetoothGattService.getCharacteristic(UUID.fromString(characteristicUUID));
             }
         }
 
-        public OperateGattService(String serviceUUID, String characteristicUUID, String descriptorUUID) {
+        private GattServiceOperator(String serviceUUID, String characteristicUUID, String descriptorUUID) {
             this(serviceUUID, characteristicUUID);
-            mDescriptor = descriptorUUID;
+            mBluetoothGattDescriptor = mBluetoothGattCharacteristic.getDescriptor(UUID.fromString(descriptorUUID));
         }
 
-        /**
-         * notify
-         */
-        public void enableCharacteristicNotify(String uuid_notify, boolean userCharacteristicDescriptor) {
-            if (mCharacteristic != null && (mCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                setCharacteristicNotification(mBluetoothGatt, mCharacteristic, userCharacteristicDescriptor, true);
-            }
+        @Override
+        public void enableCharacteristicNotify(boolean userCharacteristicDescriptor) {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattCharacteristic != null && (mBluetoothGattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    boolean set = setCharacteristicNotification(mBluetoothGatt, mBluetoothGattCharacteristic, userCharacteristicDescriptor, true);
+                    Log.v(TAG, "enableCharacteristicNotify: " + set);
+                } else {
+                    Log.v(TAG, "enableCharacteristicNotify: error false");
+                }
+            });
         }
 
-        /**
-         * stop notify
-         */
-        public boolean disableCharacteristicNotify(boolean useCharacteristicDescriptor) {
-            if (mCharacteristic != null && (mCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                return setCharacteristicNotification(mBluetoothGatt, mCharacteristic, useCharacteristicDescriptor, false);
-            } else {
-                return false;
-            }
+        @Override
+        public void disableCharacteristicNotify(boolean useCharacteristicDescriptor) {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattCharacteristic != null && (mBluetoothGattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    boolean set = setCharacteristicNotification(mBluetoothGatt, mBluetoothGattCharacteristic, useCharacteristicDescriptor, false);
+                    Log.v(TAG, "disableCharacteristicNotify: " + set);
+                } else {
+                    Log.v(TAG, "disableCharacteristicNotify: error false");
+                }
+            });
         }
 
-        /**
-         * notify setting
-         */
         private boolean setCharacteristicNotification(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
                 boolean useCharacteristicDescriptor, boolean enable) {
             if (gatt == null || characteristic == null) {
@@ -636,7 +601,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             if (useCharacteristicDescriptor) {
                 descriptor = characteristic.getDescriptor(characteristic.getUuid());
             } else {
-                descriptor = characteristic.getDescriptor(UUID.fromString(mDescriptor));
+                descriptor = characteristic.getDescriptor(UUID.fromString(UUID_CLIENT_CHARACTERISTIC_CONFIG_DESCRIPTOR));
             }
             if (descriptor == null) {
                 return false;
@@ -646,30 +611,30 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             }
         }
 
-        /**
-         * indicate
-         */
-        public void enableCharacteristicIndicate(String uuid_indicate, boolean useCharacteristicDescriptor) {
-            if (mCharacteristic != null && (mCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                setCharacteristicIndication(mBluetoothGatt, mCharacteristic, useCharacteristicDescriptor, true);
-            }
+        @Override
+        public void enableCharacteristicIndicate(boolean useCharacteristicDescriptor) {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattCharacteristic != null && (mBluetoothGattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    boolean set = setCharacteristicIndication(mBluetoothGatt, mBluetoothGattCharacteristic, useCharacteristicDescriptor, true);
+                    Log.v(TAG, "enableCharacteristicIndicate: " + set);
+                } else {
+                    Log.v(TAG, "enableCharacteristicIndicate: error false");
+                }
+            });
         }
 
-
-        /**
-         * stop indicate
-         */
-        public boolean disableCharacteristicIndicate(boolean userCharacteristicDescriptor) {
-            if (mCharacteristic != null && (mCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                return setCharacteristicIndication(mBluetoothGatt, mCharacteristic, userCharacteristicDescriptor, false);
-            } else {
-                return false;
-            }
+        @Override
+        public void disableCharacteristicIndicate(boolean userCharacteristicDescriptor) {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattCharacteristic != null && (mBluetoothGattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    boolean set = setCharacteristicIndication(mBluetoothGatt, mBluetoothGattCharacteristic, userCharacteristicDescriptor, false);
+                    Log.v(TAG, "disableCharacteristicIndicate: " + set);
+                } else {
+                    Log.v(TAG, "disableCharacteristicIndicate: error false");
+                }
+            });
         }
 
-        /**
-         * indicate setting
-         */
         private boolean setCharacteristicIndication(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic,
                 boolean useCharacteristicDescriptor, boolean enable) {
             if (gatt == null || characteristic == null) {
@@ -685,7 +650,7 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             if (useCharacteristicDescriptor) {
                 descriptor = characteristic.getDescriptor(characteristic.getUuid());
             } else {
-                descriptor = characteristic.getDescriptor(UUID.fromString(mDescriptor));
+                descriptor = characteristic.getDescriptor(UUID.fromString(UUID_CLIENT_CHARACTERISTIC_CONFIG_DESCRIPTOR));
             }
             if (descriptor == null) {
                 return false;
@@ -696,57 +661,93 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
             }
         }
 
-        /**
-         * write
-         */
-        public void writeCharacteristic(byte[] data, String uuid_write) {
-            if (data == null || data.length <= 0) {
-                return;
-            }
-
-            if (mCharacteristic == null || (mCharacteristic.getProperties() & (BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)) == 0) {
-                return;
-            }
-
-            if (mCharacteristic.setValue(data)) {
-                if (!mBluetoothGatt.writeCharacteristic(mCharacteristic)) {
+        @Override
+        public void writeCharacteristic(byte[] data) {
+            mGattReadWriteHandler.post(() -> {
+                if (data == null || data.length <= 0) {
+                    Log.v(TAG, "writeCharacteristic: data null");
+                    return;
                 }
-            }
+
+                if (mBluetoothGattCharacteristic == null || (mBluetoothGattCharacteristic.getProperties() & (BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)) == 0) {
+                    Log.v(TAG, "writeCharacteristic: mBluetoothGattCharacteristic null");
+                    return;
+                }
+
+                mBluetoothGattCharacteristic.setValue(data);
+                boolean wtite = mBluetoothGatt.writeCharacteristic(mBluetoothGattCharacteristic);
+                Log.v(TAG, "writeCharacteristic: " + wtite);
+            });
         }
 
-        /**
-         * read
-         */
-        public void readCharacteristic(String uuid_read) {
-            if (mCharacteristic != null && (mCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-                if (!mBluetoothGatt.readCharacteristic(mCharacteristic)) {
+        @Override
+        public void readCharacteristic() {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattCharacteristic != null && (mBluetoothGattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+                    boolean read = mBluetoothGatt.readCharacteristic(mBluetoothGattCharacteristic);
+                    Log.v(TAG, "readCharacteristic: " + read);
+                } else {
+                    Log.v(TAG, "readCharacteristic: error false");
                 }
-            } else {
-            }
+            });
         }
 
-        /**
-         * rssi
-         */
+        @Override
+        public void writeDescriptor(byte[] data) {
+            mGattReadWriteHandler.post(() -> {
+                if (data == null || data.length <= 0) {
+                    Log.v(TAG, "writeDescriptor: data null");
+                    return;
+                }
+
+                if (mBluetoothGattDescriptor == null) {
+                    Log.v(TAG, "writeDescriptor: mBluetoothGattDescriptor null");
+                    return;
+                }
+
+                if (mBluetoothGattDescriptor.setValue(data)) {
+                    boolean write = mBluetoothGatt.writeDescriptor(mBluetoothGattDescriptor);
+                    Log.v(TAG, "writeDescriptor: " + write);
+                } else {
+                    Log.v(TAG, "writeDescriptor: error false");
+                }
+            });
+        }
+
+        @Override
+        public void readDescriptor() {
+            mGattReadWriteHandler.post(() -> {
+                if (mBluetoothGattDescriptor == null) {
+                    Log.v(TAG, "readDescriptor: mBluetoothGattDescriptor null");
+                    return;
+                }
+
+                boolean read = mBluetoothGatt.readDescriptor(mBluetoothGattDescriptor);
+                Log.v(TAG, "readDescriptor: " + read);
+            });
+        }
+
+        @Override
         public void readRemoteRssi() {
-            if (!mBluetoothGatt.readRemoteRssi()) {
-            }
+            mGattReadWriteHandler.post(() -> {
+                boolean read = mBluetoothGatt.readRemoteRssi();
+                Log.v(TAG, "readRemoteRssi: " + read);
+            });
         }
 
-        /**
-         * set mtu
-         */
+        @Override
         public void setMtu(int requiredMtu) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                if (!mBluetoothGatt.requestMtu(requiredMtu)) {
+            mGattReadWriteHandler.post(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    boolean req = mBluetoothGatt.requestMtu(requiredMtu);
+                    Log.v(TAG, "setMtu: " + req);
+                } else {
+                    Log.v(TAG, "setMtu: require LOLLIPOP");
                 }
-            } else {
-            }
+            });
         }
 
         /**
-         * requestConnectionPriority
-         *
          * @param connectionPriority Request a specific connection priority. Must be one of
          *                           {@link BluetoothGatt#CONNECTION_PRIORITY_BALANCED},
          *                           {@link BluetoothGatt#CONNECTION_PRIORITY_HIGH}
@@ -754,11 +755,16 @@ public abstract class BleCentral extends BaseCentral implements ICentral {
          * @throws IllegalArgumentException If the parameters are outside of their
          *                                  specified range.
          */
-        public boolean requestConnectionPriority(int connectionPriority) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                return mBluetoothGatt.requestConnectionPriority(connectionPriority);
-            }
-            return false;
+        @Override
+        public void requestConnectionPriority(int connectionPriority) {
+            mGattReadWriteHandler.post(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    boolean req = mBluetoothGatt.requestConnectionPriority(connectionPriority);
+                    Log.v(TAG, "requestConnectionPriority: " + req);
+                } else {
+                    Log.v(TAG, "requestConnectionPriority: require LOLLIPOP");
+                }
+            });
         }
     }
 }
