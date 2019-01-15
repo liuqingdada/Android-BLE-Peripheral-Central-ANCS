@@ -1,6 +1,7 @@
 package com.suhen.android.libble.permission;
 
 import android.content.Context;
+import android.location.LocationManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 
@@ -76,7 +77,7 @@ public class PermissionWizard {
     /**
      * Install package.
      */
-    public static void installPackage(Context context,PermissionCallback callback, File apkFile) {
+    public static void installPackage(Context context, PermissionCallback callback, File apkFile) {
         AndPermission.with(context)
                 .install()
                 .file(apkFile)
@@ -92,7 +93,7 @@ public class PermissionWizard {
                 .start();
     }
 
-    public static void requestPermissionForAlertWindow(Context context,PermissionCallback callback) {
+    public static void requestPermissionForAlertWindow(Context context, PermissionCallback callback) {
         AndPermission.with(context)
                 .overlay()
                 .rationale(new OverlayRationale())
@@ -106,5 +107,12 @@ public class PermissionWizard {
 
         public void onDenied() {
         }
+    }
+
+    private static boolean isLocationEnable(Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean networkProvider = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean gpsProvider = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        return networkProvider || gpsProvider;
     }
 }
