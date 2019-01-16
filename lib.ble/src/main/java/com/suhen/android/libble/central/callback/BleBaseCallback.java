@@ -6,11 +6,12 @@ package com.suhen.android.libble.central.callback;
  * Email: 1239604859@qq.com
  */
 public abstract class BleBaseCallback {
+    private String mParentUuid;
+    private String mChildUuid;
 
-    private String mUUID;
-
-    public BleBaseCallback(String UUID) {
-        mUUID = UUID;
+    protected BleBaseCallback(String parentUuid, String childUuid) {
+        mParentUuid = parentUuid;
+        mChildUuid = childUuid;
     }
 
     /**
@@ -48,7 +49,11 @@ public abstract class BleBaseCallback {
     public void onMtuChanged(int mtu, int status) {
     }
 
-    public String getUUID() {
-        return mUUID;
+    public String getParentUuid() {
+        return mParentUuid;
+    }
+
+    public String getChildUuid() {
+        return mChildUuid;
     }
 }

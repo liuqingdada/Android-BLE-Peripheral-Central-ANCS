@@ -1,5 +1,6 @@
 package com.suhen.android.libble.simple;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
@@ -7,7 +8,7 @@ import android.content.Context;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 
-import com.suhen.android.libble.central.BleCentralBle;
+import com.suhen.android.libble.central.BleCentral;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 
 import java.util.List;
@@ -22,10 +23,10 @@ import java.util.concurrent.TimeUnit;
  * 18-8-5.
  * Email: 1239604859@qq.com
  */
-public class SimpleBleCentralBle extends BleCentralBle {
+public abstract class SimpleBleCentral extends BleCentral {
     private volatile ExecutorService mExecutorService;
 
-    protected SimpleBleCentralBle(Context context) {
+    protected SimpleBleCentral(Context context) {
         super(context);
     }
 
@@ -60,7 +61,7 @@ public class SimpleBleCentralBle extends BleCentralBle {
     }
 
     @Override
-    protected void onScannedPeripheral(int callbackType, ScanResult result, BleScanRecord bleScanRecord) {
+    protected void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi) {
     }
 
     @Override

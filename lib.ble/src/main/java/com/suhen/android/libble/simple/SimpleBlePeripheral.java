@@ -26,6 +26,11 @@ import java.util.UUID;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class SimpleBlePeripheral extends BlePeripheral {
+    // UUID
+    private static final String SERVICE_UUID = "4622c045-1cd2-4211-adc5-89df72c789ec";
+    private static final String CHAR_INDICATE_UUID = "4622c046-1cd2-4211-adc5-89df72c789ec";
+    private static final String CHAR_WRITE_UUID = "4622c047-1cd2-4211-adc5-89df72c789ec";
+    public static final String CHAR_READ_UUID = "4622c048-1cd2-4211-adc5-89df72c789ec";
 
     private static final int MANUFACTURER_ID = 0xFFFF;
 
@@ -105,15 +110,15 @@ public class SimpleBlePeripheral extends BlePeripheral {
     @Override
     protected void addGattService() {
         BluetoothGattService peripheralService = new BluetoothGattService(
-                UUID.fromString(BLE.SERVICE_UUID),
+                UUID.fromString(SERVICE_UUID),
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         BluetoothGattCharacteristic characteristicIndicate = new BluetoothGattCharacteristic(
-                UUID.fromString(BLE.CHAR_INDICATE_UUID),
+                UUID.fromString(CHAR_INDICATE_UUID),
                 BluetoothGattCharacteristic.PROPERTY_INDICATE,
                 BluetoothGattCharacteristic.PERMISSION_READ);
         BluetoothGattCharacteristic characteristicWrite = new BluetoothGattCharacteristic(
-                UUID.fromString(BLE.CHAR_WRITE_UUID),
+                UUID.fromString(CHAR_WRITE_UUID),
                 BluetoothGattCharacteristic.PROPERTY_WRITE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE);
 
@@ -134,7 +139,7 @@ public class SimpleBlePeripheral extends BlePeripheral {
     @Override
     public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
             boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        if (characteristic.getUuid().toString().equals(BLE.CHAR_WRITE_UUID)) {
+        if (characteristic.getUuid().toString().equals(CHAR_WRITE_UUID)) {
             // receive data:
             Log.i(TAG, "onCharacteristicWriteRequest: " + Arrays.toString(value));
             onReceiveBytes(value);

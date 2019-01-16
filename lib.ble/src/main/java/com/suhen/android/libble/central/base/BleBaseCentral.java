@@ -1,5 +1,6 @@
 package com.suhen.android.libble.central.base;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
@@ -19,6 +20,8 @@ import java.util.UUID;
  */
 public abstract class BleBaseCentral {
     protected static final int DEFAULT_SCAN_TIMEOUT = 60;
+    protected static final int TRANSPORT_AUTO = 0;
+    protected static final int PHY_LE_1M_MASK = 1;
 
     /**
      * @return default timeout is 60s
@@ -39,11 +42,12 @@ public abstract class BleBaseCentral {
     protected abstract void onScanFinished();
 
     /**
-     * @param callbackType  TargetApi({@link Build.VERSION_CODES#LOLLIPOP})
-     * @param result        TargetApi({@link Build.VERSION_CODES#LOLLIPOP})
-     * @param bleScanRecord TargetApi({@link Build.VERSION_CODES#JELLY_BEAN_MR2})
+     * @param result        for TargetApi({@link Build.VERSION_CODES#LOLLIPOP})
+     * @param bleScanRecord for TargetApi({@link Build.VERSION_CODES#JELLY_BEAN_MR2})
+     * @param remoteDevice  for TargetApi({@link Build.VERSION_CODES#JELLY_BEAN_MR2})
+     * @param rssi          for TargetApi({@link Build.VERSION_CODES#JELLY_BEAN_MR2})
      */
-    protected abstract void onScannedPeripheral(int callbackType, ScanResult result, BleScanRecord bleScanRecord);
+    protected abstract void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi);
 
     protected abstract void onConnectStarted(BluetoothGatt bluetoothGatt);
 

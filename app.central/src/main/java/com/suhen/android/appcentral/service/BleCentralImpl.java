@@ -10,20 +10,28 @@ import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
-import android.util.SparseArray;
 
 import com.suhen.android.libble.central.sdk.BleScanRecord;
-import com.suhen.android.libble.simple.SimpleBleCentralBle;
+import com.suhen.android.libble.simple.SimpleBleCentral;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by andy
  * 2019/1/15.
  * Email: 1239604859@qq.com
+ * <p>
+ * 自定义，完善自己的协议
+ * {@link SimpleBleCentral#getBlockingService()} 用作业务逻辑处理线程，可根据需要另外实现
  */
-public class BleCentralImplBle extends SimpleBleCentralBle {
-    private static final String TAG = "BleCentralImplBle";
+@SuppressWarnings("FieldCanBeLocal")
+public class BleCentralImpl extends SimpleBleCentral {
+    private static final String TAG = "BleCentralImpl";
 
-    protected BleCentralImplBle(Context context) {
+    private Set<BluetoothDevice> mRemoteDevices = new HashSet<>();
+
+    protected BleCentralImpl(Context context) {
         super(context);
     }
 
@@ -31,39 +39,37 @@ public class BleCentralImplBle extends SimpleBleCentralBle {
     protected void onScanStarted() {
         getBlockingService().execute(() -> {
             Log.d(TAG, "onScanStarted: ");
+            if (mBleStatusCallback != null) {
+                mBleStatusCallback.onScanStarted();
+            }
         });
     }
 
     @Override
     protected void onScanFinished() {
         getBlockingService().execute(() -> {
-            Log.d(TAG, "onScanFinished: ");
+            Log.d(TAG, "onScanFinished: " + mRemoteDevices);
+            mRemoteDevices.clear();
         });
     }
 
     @Override
-    protected void onScannedPeripheral(int callbackType, ScanResult result, BleScanRecord bleScanRecord) {
+    protected void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi) {
         getBlockingService().execute(() -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && result != null) {
                 ScanRecord scanRecord = result.getScanRecord();
                 if (scanRecord != null) {
-
-                    BluetoothDevice remoteDevice = result.getDevice();
-                    String deviceName = scanRecord.getDeviceName();
-                    SparseArray<byte[]> manufacturerSpecificData = scanRecord.getManufacturerSpecificData();
-
-                    if ("OTA_FFFFFFFFFFFF".equals(deviceName) || "OTA_FFFFFFFFFFFF".equals(remoteDevice.getName())) {
+                    if (mRemoteDevices.add(remoteDevice)) {
                         Log.d(TAG, "onScannedPeripheral: " + result);
-
-                        stopScan();
-
-                        connect(remoteDevice, false, TRANSPORT_AUTO, PHY_LE_1M_MASK);
+                        mBleStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
                     }
                 }
 
             } else if (bleScanRecord != null) {
                 Log.d(TAG, "onScannedPeripheral: " + bleScanRecord.toString());
-
+                if (mRemoteDevices.add(remoteDevice)) {
+                    mBleStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+                }
             }
         });
     }
@@ -82,7 +88,7 @@ public class BleCentralImplBle extends SimpleBleCentralBle {
             for (BluetoothGattService service : bluetoothGatt.getServices()) {
                 Log.i(TAG, "onConnected: " + service.getUuid());
                 for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
-                    Log.d(TAG, "onConnected: " + characteristic.getUuid());
+                    Log.d(TAG, "onConnected: " + characteristic.getUuid() + ", prop: " + getCharacteristicProperty(characteristic));
                     for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
                         Log.v(TAG, "onConnected: " + descriptor.getUuid());
                     }

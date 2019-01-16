@@ -38,12 +38,6 @@ public final class BLE {
     public static final String NOT_SUPPORT_PERIPHERAL = "This device is not support ble peripheral";
     public static final String NOT_SUPPORT_CENTRAL = "This device is not support ble central";
 
-    // UUID
-    public static final String SERVICE_UUID = "4622c045-1cd2-4211-adc5-89df72c789ec";
-    public static final String CHAR_INDICATE_UUID = "4622c046-1cd2-4211-adc5-89df72c789ec";
-    public static final String CHAR_WRITE_UUID = "4622c047-1cd2-4211-adc5-89df72c789ec";
-    public static final String CHAR_READ_UUID = "4622c048-1cd2-4211-adc5-89df72c789ec";
-
     /**
      * Create a new central instance.
      */

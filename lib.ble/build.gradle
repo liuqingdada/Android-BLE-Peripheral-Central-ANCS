@@ -42,5 +42,8 @@ dependencies {
     api "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
 
     api "com.yanzhenjie:permission:$rootProject.permissions"
+    api "com.jcraft:jzlib:$rootProject.jzlib"
+    api "org.apache.commons:commons-compress:1.18"
+
 
 }

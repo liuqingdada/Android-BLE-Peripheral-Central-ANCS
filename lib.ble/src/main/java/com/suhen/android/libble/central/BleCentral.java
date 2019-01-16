@@ -30,8 +30,9 @@ import android.widget.Toast;
 
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.R;
-import com.suhen.android.libble.central.callback.BleBaseCallback;
 import com.suhen.android.libble.central.base.BleBaseCentral;
+import com.suhen.android.libble.central.callback.BleBaseCallback;
+import com.suhen.android.libble.central.callback.BleStatusCallback;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 import com.suhen.android.libble.permission.PermissionWizard;
 import com.yanzhenjie.permission.Permission;
@@ -39,19 +40,16 @@ import com.yanzhenjie.permission.Permission;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by liuqing
  * 2018/7/26.
  * Email: suhen0420@163.com
  */
-public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
-    private static final String TAG = BleCentralBle.class.getSimpleName();
-    protected static final int TRANSPORT_AUTO = 0;
-    protected static final int PHY_LE_1M_MASK = 1;
+public abstract class BleCentral extends BleBaseCentral implements ICentral {
+    private static final String TAG = BleCentral.class.getSimpleName();
 
     private BluetoothStatusReceiver mBluetoothStatusReceiver;
 
@@ -62,12 +60,13 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
     private static final int MSG_BLE_SCAN_STOP = 0xFFFF;
     private Handler mGattCallbackHandler;
 
-    private Set<BleBaseCallback> mBleBaseCallbacks = new ConcurrentSkipListSet<>();
+    protected List<BleBaseCallback> mBleBaseCallbacks = new CopyOnWriteArrayList<>();
 
     private HandlerThread mGattReadWriteThread;
     private Handler mGattReadWriteHandler;
 
     protected Context mContext;
+    protected BleStatusCallback mBleStatusCallback;
 
     protected BluetoothManager mBluetoothManager;
     protected BluetoothAdapter mBluetoothAdapter;
@@ -75,7 +74,7 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
     protected BluetoothGatt mBluetoothGatt;
     protected BluetoothDevice mConnectionDevice;
 
-    protected BleCentralBle(Context context) {
+    protected BleCentral(Context context) {
         mContext = context;
         mGattCallbackThread = new HandlerThread("gatt_callback_looper_thread");
         mGattCallbackThread.start();
@@ -108,6 +107,11 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
         mBluetoothStatusReceiver = new BluetoothStatusReceiver();
         IntentFilter bleIntentFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mContext.registerReceiver(mBluetoothStatusReceiver, bleIntentFilter);
+    }
+
+    @Override
+    public void setBleStatusCallback(BleStatusCallback bleStatusCallback) {
+
     }
 
     @Override
@@ -212,6 +216,7 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
         mGattCallbackThread.quitSafely();
         mGattReadWriteThread.quitSafely();
+        mBleBaseCallbacks.clear();
     }
 
     private class BluetoothStatusReceiver extends BroadcastReceiver {
@@ -313,7 +318,7 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            mGattCallbackHandler.post(() -> onScannedPeripheral(callbackType, result, null));
+            mGattCallbackHandler.post(() -> onScannedPeripheral(result, null, result.getDevice(), result.getRssi()));
         }
 
         @Override
@@ -329,7 +334,7 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
 
     private BluetoothAdapter.LeScanCallback mLeCallback = (device, rssi, scanRecord) -> {
         BleScanRecord bleScanRecord = BleScanRecord.parseFromBytes(scanRecord);
-        mGattCallbackHandler.post(() -> onScannedPeripheral(0, null, bleScanRecord));
+        mGattCallbackHandler.post(() -> onScannedPeripheral(null, bleScanRecord, device, rssi));
     };
 
     private BluetoothGattCallback mBluetoothGattCallback = new BluetoothGattCallback() {
@@ -401,7 +406,8 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
+                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
                         bleBaseCallback.onCharacteristicRead(characteristic.getValue(), status);
                     }
                 }
@@ -414,7 +420,8 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
+                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
                         bleBaseCallback.onCharacteristicWrite(characteristic.getValue(), status);
                     }
                 }
@@ -427,7 +434,8 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
+                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
                         bleBaseCallback.onCharacteristicChanged(characteristic.getValue());
                     }
                 }
@@ -440,7 +448,8 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
+                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
                         bleBaseCallback.onDescriptorRead(descriptor.getValue(), status);
                     }
                 }
@@ -453,7 +462,8 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
                 for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getUUID().equalsIgnoreCase(uuid)) {
+                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
                         bleBaseCallback.onDescriptorWrite(descriptor.getValue(), status);
                     }
                 }
@@ -766,5 +776,65 @@ public abstract class BleCentralBle extends BleBaseCentral implements ICentral {
                 }
             });
         }
+    }
+
+    @Override
+    public String getCharacteristicProperty(BluetoothGattCharacteristic characteristic) {
+        int charaProp = characteristic.getProperties();
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_BROADCAST) > 0) {
+            return "Broadcast";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+            return "Read";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
+            return "Write No Response";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
+            return "Write";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+            return "Notify";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_INDICATE) > 0) {
+            return "Indicate";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) > 0) {
+            return "Signed Write";
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) > 0) {
+            return "Extended";
+        }
+        return "Unknown";
+    }
+
+    @Override
+    public int getIntCharacteristicProperty(BluetoothGattCharacteristic characteristic) {
+        int charaProp = characteristic.getProperties();
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_BROADCAST) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_BROADCAST;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_READ;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_WRITE;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_NOTIFY;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_INDICATE) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_INDICATE;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE;
+        }
+        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) > 0) {
+            return BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS;
+        }
+        return CHARACTERISTIC_PROPERTY_UNKNOWN;
     }
 }
