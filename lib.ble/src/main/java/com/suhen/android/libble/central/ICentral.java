@@ -4,8 +4,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 
-import com.suhen.android.libble.central.callback.BleBaseCallback;
-import com.suhen.android.libble.central.callback.BleStatusCallback;
+import com.suhen.android.libble.central.callback.BaseCentralCallback;
+import com.suhen.android.libble.central.callback.CentralStatusCallback;
 
 /**
  * Created by liuqing
@@ -19,7 +19,7 @@ public interface ICentral {
 
     void onCreate();
 
-    void setBleStatusCallback(BleStatusCallback bleStatusCallback);
+    void setCentralStatusCallback(CentralStatusCallback centralStatusCallback);
 
     /**
      * init and start scan
@@ -33,7 +33,7 @@ public interface ICentral {
 
     void stopScan();
 
-    void addBleBaseCallback(BleBaseCallback bleBaseCallback);
+    void addBleBaseCallback(BaseCentralCallback baseCentralCallback);
 
     BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy);
 

@@ -39,8 +39,8 @@ public class BleCentralImpl extends SimpleBleCentral {
     protected void onScanStarted() {
         getBlockingService().execute(() -> {
             Log.d(TAG, "onScanStarted: ");
-            if (mBleStatusCallback != null) {
-                mBleStatusCallback.onScanStarted();
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onScanStarted();
             }
         });
     }
@@ -61,14 +61,14 @@ public class BleCentralImpl extends SimpleBleCentral {
                 if (scanRecord != null) {
                     if (mRemoteDevices.add(remoteDevice)) {
                         Log.d(TAG, "onScannedPeripheral: " + result);
-                        mBleStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+                        mCentralStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
                     }
                 }
 
             } else if (bleScanRecord != null) {
                 Log.d(TAG, "onScannedPeripheral: " + bleScanRecord.toString());
                 if (mRemoteDevices.add(remoteDevice)) {
-                    mBleStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+                    mCentralStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
                 }
             }
         });

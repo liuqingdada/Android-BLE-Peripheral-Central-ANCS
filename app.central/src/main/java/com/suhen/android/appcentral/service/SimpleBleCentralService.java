@@ -15,8 +15,8 @@ import android.util.Log;
 import com.suhen.android.appcentral.R;
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.central.ICentral;
-import com.suhen.android.libble.central.callback.BleBaseCallback;
-import com.suhen.android.libble.central.callback.BleStatusCallback;
+import com.suhen.android.libble.central.callback.BaseCentralCallback;
+import com.suhen.android.libble.central.callback.CentralStatusCallback;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 import com.suhen.android.libble.message.BleMessage;
 import com.suhen.android.libble.permission.PermissionWizard;
@@ -50,7 +50,7 @@ public class SimpleBleCentralService extends Service {
         try {
             mCentral = BLE.newCentral(BleCentralImpl.class, this);
             mCentral.onCreate();
-            mCentral.setBleStatusCallback(mBleStatusCallback);
+            mCentral.setCentralStatusCallback(mCentralStatusCallback);
             mCentral.setup();
 
         } catch (Exception e) {
@@ -102,7 +102,7 @@ public class SimpleBleCentralService extends Service {
     private static final String CHAR_READ_UUID = "4622c048-1cd2-4211-adc5-89df72c789ec";
 
     private ICentral.IOperator writeOperator;
-    private BleBaseCallback writeCallback = new BleBaseCallback(SERVICE_UUID, CHAR_WRITE_UUID) {
+    private BaseCentralCallback writeCallback = new BaseCentralCallback(SERVICE_UUID, CHAR_WRITE_UUID) {
         @Override
         public void onCharacteristicWrite(byte[] value, int status) {
             super.onCharacteristicWrite(value, status);
@@ -111,7 +111,7 @@ public class SimpleBleCentralService extends Service {
     };
 
     private ICentral.IOperator readOperator;
-    private BleBaseCallback readCallback = new BleBaseCallback(SERVICE_UUID, CHAR_READ_UUID) {
+    private BaseCentralCallback readCallback = new BaseCentralCallback(SERVICE_UUID, CHAR_READ_UUID) {
         @Override
         public void onCharacteristicRead(byte[] value, int status) {
             super.onCharacteristicRead(value, status);
@@ -119,7 +119,7 @@ public class SimpleBleCentralService extends Service {
         }
     };
 
-    private BleStatusCallback mBleStatusCallback = new BleStatusCallback() {
+    private CentralStatusCallback mCentralStatusCallback = new CentralStatusCallback() {
         @Override
         public void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && result != null) {

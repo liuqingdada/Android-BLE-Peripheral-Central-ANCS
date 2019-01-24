@@ -31,8 +31,8 @@ import android.widget.Toast;
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.R;
 import com.suhen.android.libble.central.base.BleBaseCentral;
-import com.suhen.android.libble.central.callback.BleBaseCallback;
-import com.suhen.android.libble.central.callback.BleStatusCallback;
+import com.suhen.android.libble.central.callback.BaseCentralCallback;
+import com.suhen.android.libble.central.callback.CentralStatusCallback;
 import com.suhen.android.libble.central.sdk.BleScanRecord;
 import com.suhen.android.libble.permission.PermissionWizard;
 import com.yanzhenjie.permission.Permission;
@@ -60,13 +60,13 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
     private static final int MSG_BLE_SCAN_STOP = 0xFFFF;
     private Handler mGattCallbackHandler;
 
-    protected List<BleBaseCallback> mBleBaseCallbacks = new CopyOnWriteArrayList<>();
+    protected List<BaseCentralCallback> mBaseCentralCallbacks = new CopyOnWriteArrayList<>();
 
     private HandlerThread mGattReadWriteThread;
     private Handler mGattReadWriteHandler;
 
     protected Context mContext;
-    protected BleStatusCallback mBleStatusCallback;
+    protected CentralStatusCallback mCentralStatusCallback;
 
     protected BluetoothManager mBluetoothManager;
     protected BluetoothAdapter mBluetoothAdapter;
@@ -110,7 +110,7 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
     }
 
     @Override
-    public void setBleStatusCallback(BleStatusCallback bleStatusCallback) {
+    public void setCentralStatusCallback(CentralStatusCallback centralStatusCallback) {
 
     }
 
@@ -152,8 +152,8 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
     }
 
     @Override
-    public void addBleBaseCallback(BleBaseCallback bleBaseCallback) {
-        mBleBaseCallbacks.add(bleBaseCallback);
+    public void addBleBaseCallback(BaseCentralCallback baseCentralCallback) {
+        mBaseCentralCallbacks.add(baseCentralCallback);
     }
 
     /**
@@ -216,7 +216,7 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
         mGattCallbackThread.quitSafely();
         mGattReadWriteThread.quitSafely();
-        mBleBaseCallbacks.clear();
+        mBaseCentralCallbacks.clear();
     }
 
     private class BluetoothStatusReceiver extends BroadcastReceiver {
@@ -405,10 +405,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
             Log.d(TAG, "onCharacteristicRead: characteristic = " + characteristic + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
-                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
-                        bleBaseCallback.onCharacteristicRead(characteristic.getValue(), status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    if (baseCentralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            baseCentralCallback.getChildUuid().equalsIgnoreCase(uuid)) {
+                        baseCentralCallback.onCharacteristicRead(characteristic.getValue(), status);
                     }
                 }
             });
@@ -419,10 +419,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
             Log.d(TAG, "onCharacteristicWrite: characteristic = " + characteristic + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
-                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
-                        bleBaseCallback.onCharacteristicWrite(characteristic.getValue(), status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    if (baseCentralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            baseCentralCallback.getChildUuid().equalsIgnoreCase(uuid)) {
+                        baseCentralCallback.onCharacteristicWrite(characteristic.getValue(), status);
                     }
                 }
             });
@@ -433,10 +433,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
             Log.d(TAG, "onCharacteristicChanged: characteristic = " + characteristic);
             mGattCallbackHandler.post(() -> {
                 String uuid = characteristic.getUuid().toString();
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
-                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
-                        bleBaseCallback.onCharacteristicChanged(characteristic.getValue());
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    if (baseCentralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            baseCentralCallback.getChildUuid().equalsIgnoreCase(uuid)) {
+                        baseCentralCallback.onCharacteristicChanged(characteristic.getValue());
                     }
                 }
             });
@@ -447,10 +447,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
             Log.d(TAG, "onDescriptorRead: mBluetoothGattDescriptor = " + descriptor + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
-                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
-                        bleBaseCallback.onDescriptorRead(descriptor.getValue(), status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    if (baseCentralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            baseCentralCallback.getChildUuid().equalsIgnoreCase(uuid)) {
+                        baseCentralCallback.onDescriptorRead(descriptor.getValue(), status);
                     }
                 }
             });
@@ -461,10 +461,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
             Log.d(TAG, "onDescriptorWrite: mBluetoothGattDescriptor = " + descriptor + ", status = " + status);
             mGattCallbackHandler.post(() -> {
                 String uuid = descriptor.getUuid().toString();
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    if (bleBaseCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
-                            bleBaseCallback.getChildUuid().equalsIgnoreCase(uuid)) {
-                        bleBaseCallback.onDescriptorWrite(descriptor.getValue(), status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    if (baseCentralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            baseCentralCallback.getChildUuid().equalsIgnoreCase(uuid)) {
+                        baseCentralCallback.onDescriptorWrite(descriptor.getValue(), status);
                     }
                 }
             });
@@ -479,8 +479,8 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
         public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
             Log.d(TAG, "onReadRemoteRssi: rssi = " + rssi + ", status = " + status);
             mGattCallbackHandler.post(() -> {
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    bleBaseCallback.onReadRemoteRssi(rssi, status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    baseCentralCallback.onReadRemoteRssi(rssi, status);
                 }
             });
         }
@@ -489,8 +489,8 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             Log.d(TAG, "onMtuChanged: mtu = " + mtu + ", status = " + status);
             mGattCallbackHandler.post(() -> {
-                for (BleBaseCallback bleBaseCallback : mBleBaseCallbacks) {
-                    bleBaseCallback.onMtuChanged(mtu, status);
+                for (BaseCentralCallback baseCentralCallback : mBaseCentralCallbacks) {
+                    baseCentralCallback.onMtuChanged(mtu, status);
                 }
             });
         }

@@ -16,7 +16,7 @@ import java.util.UUID;
  * 2019/1/16.
  * Email: 1239604859@qq.com
  */
-public class BleStatusCallback extends BleBaseCentral {
+public class CentralStatusCallback extends BleBaseCentral {
     @Override
     public int scanTimeout() {
         return 0;

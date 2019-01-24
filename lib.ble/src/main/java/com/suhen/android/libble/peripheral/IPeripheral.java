@@ -15,6 +15,4 @@ public interface IPeripheral {
     boolean isConnected();
 
     void onDestroy();
-
-    void sendBleBytes(byte[] bytes);
 }

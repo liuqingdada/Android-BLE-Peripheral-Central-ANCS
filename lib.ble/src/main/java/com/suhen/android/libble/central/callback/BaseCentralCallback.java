@@ -5,11 +5,11 @@ package com.suhen.android.libble.central.callback;
  * 2019/1/13.
  * Email: 1239604859@qq.com
  */
-public abstract class BleBaseCallback {
+public abstract class BaseCentralCallback {
     private String mParentUuid;
     private String mChildUuid;
 
-    protected BleBaseCallback(String parentUuid, String childUuid) {
+    protected BaseCentralCallback(String parentUuid, String childUuid) {
         mParentUuid = parentUuid;
         mChildUuid = childUuid;
     }
@@ -35,7 +35,7 @@ public abstract class BleBaseCallback {
     }
 
     /**
-     * like the {@link BleBaseCallback#onCharacteristicRead}
+     * like the {@link BaseCentralCallback#onCharacteristicRead}
      */
     public void onDescriptorRead(byte[] value, int status) {
     }

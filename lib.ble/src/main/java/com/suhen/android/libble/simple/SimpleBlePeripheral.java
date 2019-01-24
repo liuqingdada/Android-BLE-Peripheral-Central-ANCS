@@ -39,6 +39,11 @@ public class SimpleBlePeripheral extends BlePeripheral {
     }
 
     @Override
+    protected void peripheralNotSupport() {
+
+    }
+
+    @Override
     protected void onPeripheralStartSuccess(AdvertiseSettings settingsInEffect) {
 
     }
@@ -65,11 +70,6 @@ public class SimpleBlePeripheral extends BlePeripheral {
 
     @Override
     protected void onReceiveBytes(byte[] bytes) {
-
-    }
-
-    @Override
-    public void sendBleBytes(byte[] bytes) {
 
     }
 
