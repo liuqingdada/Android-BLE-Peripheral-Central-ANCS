@@ -1,5 +1,8 @@
 package com.suhen.android.libble.peripheral;
 
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattCharacteristic;
+
 import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback;
 
 /**
@@ -17,6 +20,18 @@ public interface IPeripheral {
     void preparePair();
 
     boolean isConnected();
+
+    void sendResponse(BluetoothDevice device, int requestId, int status, int offset, byte[] value);
+
+    void notify(BluetoothGattCharacteristic characteristic);
+
+    //////
+    boolean lockCurrentIndication(BluetoothGattCharacteristic indicationCharacteristic);
+
+    void unlockCurrentIndication();
+
+    boolean indicate(byte[] value);
+    //////
 
     void onDestroy();
 }

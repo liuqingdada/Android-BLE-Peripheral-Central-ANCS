@@ -32,11 +32,23 @@ public abstract class BasePeripheralCallback {
             boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
     }
 
-    public String getParentUuid() {
+    public void onNotificationSent(BluetoothDevice device, BluetoothGattCharacteristic characteristic, int status) {
+    }
+
+    public void onMtuChanged(BluetoothDevice device, int mtu) {
+    }
+
+    public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
+    }
+
+    public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
+    }
+
+    public final String getParentUuid() {
         return mParentUuid;
     }
 
-    public String getChildUuid() {
+    public final String getChildUuid() {
         return mChildUuid;
     }
 }

@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
+import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -33,6 +34,8 @@ import com.suhen.android.libble.utils.StringUtil;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by liuqing
@@ -44,7 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public abstract class BlePeripheral extends BleBasePeripheral implements IPeripheral {
-    protected static final String TAG = BlePeripheral.class.getSimpleName();
+    private static final String TAG = BlePeripheral.class.getSimpleName();
 
     private HandlerThread mGattServerCallbackThread;
     private Handler mGattServerCallbackHandler;
@@ -54,6 +57,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     private Handler mGattServerReadWriteHandler;
 
     protected Context mContext;
+    private Lock mLock = new ReentrantLock();
 
     protected BluetoothManager mBluetoothManager;
     protected BluetoothAdapter mBluetoothAdapter;
@@ -70,9 +74,11 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     @Override
     public void onCreate() {
         mGattServerCallbackThread = new HandlerThread("gatt-server-callback-looper-thread");
+        mGattServerCallbackThread.start();
         mGattServerCallbackHandler = new Handler(mGattServerCallbackThread.getLooper());
 
         mGattServerReadWriteThread = new HandlerThread("gatt-server-read-write-looper-thread");
+        mGattServerReadWriteThread.start();
         mGattServerReadWriteHandler = new Handler(mGattServerReadWriteThread.getLooper());
 
         mBluetoothStatusReceiver = new BluetoothStatusReceiver();
@@ -82,8 +88,20 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
     @Override
     public void addBasePeripheralCallback(BasePeripheralCallback basePeripheralCallback) {
-        if (!mBasePeripheralCallbacks.contains(basePeripheralCallback)) {
-            mBasePeripheralCallbacks.add(basePeripheralCallback);
+        mLock.lock();
+        try {
+            boolean isContains = false;
+            for (BasePeripheralCallback peripheralCallback : mBasePeripheralCallbacks) {
+                if (peripheralCallback.getParentUuid().equalsIgnoreCase(basePeripheralCallback.getParentUuid()) &&
+                        peripheralCallback.getChildUuid().equalsIgnoreCase(basePeripheralCallback.getChildUuid())) {
+                    isContains = true;
+                }
+            }
+            if (!isContains) {
+                mBasePeripheralCallbacks.add(basePeripheralCallback);
+            }
+        } finally {
+            mLock.unlock();
         }
     }
 
@@ -141,99 +159,142 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     /* BluetoothGattServerCallback START */     /* BluetoothGattServerCallback START */
     /* BluetoothGattServerCallback START */     /* BluetoothGattServerCallback START */
 
-    @Override
-    public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        switch (newState) {
+    private BluetoothGattServerCallback mBluetoothGattServerCallback = new BluetoothGattServerCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
+            switch (newState) {
 
-            case BluetoothProfile.STATE_CONNECTED:
-                Log.d(TAG, "onConnectionStateChange: peripheral STATE_CONNECTED");
-                mConnectionDevice = device;
+                case BluetoothProfile.STATE_CONNECTED:
+                    Log.d(TAG, "onConnectionStateChange: peripheral STATE_CONNECTED");
+                    mConnectionDevice = device;
+                    // create bond
+                    if (device.getBondState() == BluetoothDevice.BOND_NONE) {
+                        try {
+                            device.setPairingConfirmation(true);
+                        } catch (final SecurityException e) {
+                            Log.e(TAG, "onConnectionStateChange: ", e);
+                        }
+                        device.createBond();
+                    } else if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                        mGattServerCallbackHandler.post(() -> {
+                            if (mBluetoothGattServer != null) {
+                                mBluetoothGattServer.connect(device, true);
+                            }
+                        });
+                    }
 
-                mGattServerCallbackHandler.post(() -> onConnected(device)); // central incomming
-                break;
+                    mGattServerCallbackHandler.post(() -> onConnected(device)); // central incomming
+                    break;
 
-            case BluetoothProfile.STATE_DISCONNECTED:
-                Log.d(TAG, "onConnectionStateChange: peripheral STATE_DISCONNECTED");
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    Log.d(TAG, "onConnectionStateChange: peripheral STATE_DISCONNECTED");
 
-                mGattServerCallbackHandler.post(() -> onDisconnected(device)); // central outgoing
-                break;
+                    mGattServerCallbackHandler.post(() -> onDisconnected(device)); // central outgoing
+                    break;
+            }
         }
-    }
 
-    @Override
-    public void onServiceAdded(int status, BluetoothGattService service) {
-    }
+        @Override
+        public void onServiceAdded(int status, BluetoothGattService service) {
+        }
 
-    @Override
-    public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
-        mGattServerCallbackHandler.post(() -> {
-            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
-                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
-                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
-                    basePeripheralCallback.onCharacteristicReadRequest(device, requestId, offset, characteristic);
+        @Override
+        public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
+            mGattServerCallbackHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
+                        basePeripheralCallback.onCharacteristicReadRequest(device, requestId, offset, characteristic);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    @Override
-    public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
-            boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        mGattServerCallbackHandler.post(() -> {
-            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
-                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
-                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
-                    basePeripheralCallback.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
+        @Override
+        public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
+                boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+            mGattServerCallbackHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                            basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
+                        basePeripheralCallback.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    @Override
-    public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
-        mGattServerCallbackHandler.post(() -> {
-            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
-                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
-                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
-                    basePeripheralCallback.onDescriptorReadRequest(device, requestId, offset, descriptor);
+        @Override
+        public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
+            mGattServerCallbackHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
+                        basePeripheralCallback.onDescriptorReadRequest(device, requestId, offset, descriptor);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    @Override
-    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor,
-            boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        mGattServerCallbackHandler.post(() -> {
-            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
-                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
-                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
-                    basePeripheralCallback.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
+        @Override
+        public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor,
+                boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+            mGattServerCallbackHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                            basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
+                        basePeripheralCallback.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    @Override
-    public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-        mGattServerReadWriteHandler.post(() -> mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null));
-    }
+        @Override
+        public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
+            mGattServerReadWriteHandler.post(() -> mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null));
+        }
 
-    @Override
-    public void onNotificationSent(BluetoothDevice device, int status) {
-    }
+        @Override
+        public void onNotificationSent(BluetoothDevice device, int status) {
+            mGattServerReadWriteHandler.post(() -> {
+                if (currentIndicationCharacteristic == null || !lockCurrentIndication.get()) {
+                    return;
+                }
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(currentIndicationCharacteristic.getService().getUuid().toString()) &&
+                            basePeripheralCallback.getChildUuid().equalsIgnoreCase(currentIndicationCharacteristic.getUuid().toString())) {
+                        basePeripheralCallback.onNotificationSent(device, currentIndicationCharacteristic, status);
+                    }
+                }
+            });
+        }
 
-    @Override
-    public void onMtuChanged(BluetoothDevice device, int mtu) {
-    }
+        @Override
+        public void onMtuChanged(BluetoothDevice device, int mtu) {
+            mGattServerReadWriteHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    basePeripheralCallback.onMtuChanged(device, mtu);
+                }
+            });
+        }
 
-    @Override
-    public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-    }
+        @Override
+        public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
+            mGattServerReadWriteHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    basePeripheralCallback.onPhyUpdate(device, txPhy, rxPhy, status);
+                }
+            });
+        }
 
-    @Override
-    public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-    }
+        @Override
+        public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
+            mGattServerReadWriteHandler.post(() -> {
+                for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                    basePeripheralCallback.onPhyRead(device, txPhy, rxPhy, status);
+                }
+            });
+        }
+    };
 
     /* BluetoothGattServerCallback END */       /* BluetoothGattServerCallback END */
     /* BluetoothGattServerCallback END */       /* BluetoothGattServerCallback END */
@@ -265,6 +326,23 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
                     case BluetoothAdapter.STATE_TURNING_ON:
                         Log.e(TAG, "bluetooth TURNING_ON");
                         break;
+                }
+            }
+            if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(intent.getAction())) {
+                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+
+                if (state == BluetoothDevice.BOND_BONDED) {
+                    final BluetoothDevice bondedDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                    // successfully bonded
+                    context.unregisterReceiver(this);
+
+                    mGattServerCallbackHandler.post(() -> {
+                        if (mBluetoothGattServer != null && bondedDevice.equals(mConnectionDevice)) {
+                            mBluetoothGattServer.connect(bondedDevice, true);
+                        }
+                    });
+                    Log.e(TAG, "successfully bonded");
                 }
             }
         }
@@ -343,7 +421,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             return false;
         }
 
-        mBluetoothGattServer = mBluetoothManager.openGattServer(mContext, this);
+        mBluetoothGattServer = mBluetoothManager.openGattServer(mContext, mBluetoothGattServerCallback);
         mBluetoothGattServer.clearServices();
 
         return true;
@@ -383,4 +461,58 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             mGattServerCallbackHandler.post(() -> onPeripheralStartFailure(errorCode));
         }
     };
+
+    /**
+     * @param status BluetoothGatt.GATT_SUCCESS
+     */
+    @Override
+    public void sendResponse(BluetoothDevice device, int requestId, int status, int offset, byte[] value) {
+        mGattServerReadWriteHandler.post(() -> {
+            if (!isConnected()) {
+                return;
+            }
+            mBluetoothGattServer.sendResponse(device, requestId, status, offset, value);
+        });
+    }
+
+    @Override
+    public void notify(BluetoothGattCharacteristic characteristic) {
+        mGattServerReadWriteHandler.post(() -> {
+            if (!isConnected()) {
+                return;
+            }
+            mBluetoothGattServer.notifyCharacteristicChanged(mConnectionDevice, characteristic, false);
+        });
+    }
+
+    private BluetoothGattCharacteristic currentIndicationCharacteristic;
+    private AtomicBoolean lockCurrentIndication = new AtomicBoolean(false);
+
+    @Override
+    public boolean lockCurrentIndication(BluetoothGattCharacteristic indicationCharacteristic) {
+        if (lockCurrentIndication.get()) {
+            return false; // 已经被占用
+        } else {
+            lockCurrentIndication.set(true);
+            currentIndicationCharacteristic = indicationCharacteristic;
+            return true; // 锁成功，此时不允许其他特征 Indication
+        }
+    }
+
+    @Override
+    public void unlockCurrentIndication() {
+        if (lockCurrentIndication.get()) {
+            lockCurrentIndication.set(false);
+            currentIndicationCharacteristic = null;
+        }
+    }
+
+    @Override
+    public boolean indicate(byte[] value) {
+        if (!isConnected() || currentIndicationCharacteristic == null) {
+            return false;
+        }
+        currentIndicationCharacteristic.setValue(value);
+        return mBluetoothGattServer.notifyCharacteristicChanged(mConnectionDevice, currentIndicationCharacteristic, true);
+    }
 }

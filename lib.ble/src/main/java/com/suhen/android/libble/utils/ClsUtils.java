@@ -10,27 +10,19 @@ import java.lang.reflect.Method;
 public class ClsUtils {
     public static String getBtAddressViaReflection() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (!bluetoothAdapter.isEnabled()) {
-            bluetoothAdapter.enable();
-        }
-
+        String bluetoothMacAddress = "";
         try {
-            Object bluetoothManagerService = bluetoothAdapter.getClass().getDeclaredField("mService");
-            Log.w("periphery", "couldn't find bluetoothManagerService");
-            Object address = bluetoothManagerService.getClass().getDeclaredMethod("getAddress").invoke(bluetoothManagerService);
+            Field mServiceField = bluetoothAdapter.getClass().getDeclaredField("mService");
+            mServiceField.setAccessible(true);
 
-            if (address instanceof String) {
-                Log.w("periphery", "using reflection to get the BT MAC address: " + address);
-                if ("".equals(address) || "00:00:00:00:00:00".equals(address) || "02:00:00:00:00:00".equals(address)) {
-                    return null;
-                }
-                return (String) address;
-            } else {
-                return null;
+            Object btManagerService = mServiceField.get(bluetoothAdapter);
+
+            if (btManagerService != null) {
+                bluetoothMacAddress = (String) btManagerService.getClass().getMethod("getAddress").invoke(btManagerService);
             }
-        } catch (Exception e) {
-            return null;
+        } catch (Exception ignore) {
         }
+        return bluetoothMacAddress;
     }
 
     public static boolean pair(String mac) {

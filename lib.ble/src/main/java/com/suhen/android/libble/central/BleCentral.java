@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by liuqing
@@ -65,6 +67,7 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
     private Handler mGattReadWriteHandler;
 
     protected Context mContext;
+    private Lock mLock = new ReentrantLock();
     protected CentralStatusCallback mCentralStatusCallback;
 
     protected BluetoothManager mBluetoothManager;
@@ -151,7 +154,21 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
     @Override
     public void addBaseCentralCallback(BaseCentralCallback baseCentralCallback) {
-        mBaseCentralCallbacks.add(baseCentralCallback);
+        mLock.lock();
+        try {
+            boolean isContains = false;
+            for (BaseCentralCallback centralCallback : mBaseCentralCallbacks) {
+                if (centralCallback.getParentUuid().equalsIgnoreCase(baseCentralCallback.getParentUuid()) &&
+                        centralCallback.getChildUuid().equalsIgnoreCase(baseCentralCallback.getChildUuid())) {
+                    isContains = true;
+                }
+            }
+            if (!isContains) {
+                mBaseCentralCallbacks.add(baseCentralCallback);
+            }
+        } finally {
+            mLock.unlock();
+        }
     }
 
     /**

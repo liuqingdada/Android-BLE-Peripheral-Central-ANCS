@@ -42,7 +42,7 @@ public final class BLE {
      * Create a new central instance.
      */
     public synchronized static ICentral newCentral(Class<? extends ICentral> clazz, Context context) throws Exception {
-        Constructor<? extends ICentral> constructor = clazz.getConstructor(Context.class);
+        Constructor<? extends ICentral> constructor = clazz.getDeclaredConstructor(Context.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context);
     }
@@ -51,7 +51,7 @@ public final class BLE {
      * Create a new peripheral instance.
      */
     public synchronized static IPeripheral newPeripheral(Class<? extends BlePeripheral> clazz, Context context) throws Exception {
-        Constructor<? extends BlePeripheral> constructor = clazz.getConstructor(Context.class);
+        Constructor<? extends BlePeripheral> constructor = clazz.getDeclaredConstructor(Context.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context);
     }
