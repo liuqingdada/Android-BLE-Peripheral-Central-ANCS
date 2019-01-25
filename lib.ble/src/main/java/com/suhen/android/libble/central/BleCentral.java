@@ -1,6 +1,5 @@
 package com.suhen.android.libble.central;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -40,8 +39,9 @@ import com.yanzhenjie.permission.Permission;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by liuqing
@@ -53,14 +53,13 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
     private BluetoothStatusReceiver mBluetoothStatusReceiver;
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private BluetoothLeScanner mLeScanner;
 
     private HandlerThread mGattCallbackThread;
     private static final int MSG_BLE_SCAN_STOP = 0xFFFF;
     private Handler mGattCallbackHandler;
 
-    protected List<BaseCentralCallback> mBaseCentralCallbacks = new CopyOnWriteArrayList<>();
+    protected Queue<BaseCentralCallback> mBaseCentralCallbacks = new ConcurrentLinkedQueue<>();
 
     private HandlerThread mGattReadWriteThread;
     private Handler mGattReadWriteHandler;
@@ -76,10 +75,10 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
     protected BleCentral(Context context) {
         mContext = context;
-        mGattCallbackThread = new HandlerThread("gatt_callback_looper_thread");
+        mGattCallbackThread = new HandlerThread("gatt-callback-looper-thread");
         mGattCallbackThread.start();
 
-        mGattReadWriteThread = new HandlerThread("gatt_read_write_looper_thread");
+        mGattReadWriteThread = new HandlerThread("gatt-read-write-looper-thread");
         mGattReadWriteThread.start();
 
         mGattCallbackHandler = new Handler(mGattCallbackThread.getLooper()) {
@@ -101,7 +100,6 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
         }
     }
 
-    @SuppressLint("ShowToast")
     @Override
     public void onCreate() {
         mBluetoothStatusReceiver = new BluetoothStatusReceiver();
@@ -111,7 +109,7 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
     @Override
     public void setCentralStatusCallback(CentralStatusCallback centralStatusCallback) {
-
+        mCentralStatusCallback = centralStatusCallback;
     }
 
     @Override
@@ -152,7 +150,7 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
     }
 
     @Override
-    public void addBleBaseCallback(BaseCentralCallback baseCentralCallback) {
+    public void addBaseCentralCallback(BaseCentralCallback baseCentralCallback) {
         mBaseCentralCallbacks.add(baseCentralCallback);
     }
 
@@ -191,6 +189,13 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
 
         return mBluetoothGatt;
+    }
+
+    @Override
+    public void disconnect() {
+        if (mBluetoothGatt != null) {
+            mBluetoothGatt.disconnect();
+        }
     }
 
     @Override
@@ -254,11 +259,13 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
         PermissionWizard.requestPermission(mContext, new PermissionWizard.PermissionCallback() {
             @Override
             public void onGranted() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    scanLollipop();
-                } else {
-                    scanJellyBeanMr2();
-                }
+                mGattCallbackHandler.post(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        scanLollipop();
+                    } else {
+                        scanJellyBeanMr2();
+                    }
+                });
             }
         }, Permission.Group.LOCATION);
     }
@@ -295,12 +302,14 @@ public abstract class BleCentral extends BleBaseCentral implements ICentral {
 
     private void stopLeScan() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            mLeScanner.flushPendingScanResults(mLeLollipopCallback);
-            mLeScanner.stopScan(mLeLollipopCallback);
-            onScanFinished();
+            if (mLeScanner != null) {
+                mLeScanner.flushPendingScanResults(mLeLollipopCallback);
+                mLeScanner.stopScan(mLeLollipopCallback);
+                mGattCallbackHandler.post(this::onScanFinished);
+            }
         } else {
             mBluetoothAdapter.stopLeScan(mLeCallback);
-            onScanFinished();
+            mGattCallbackHandler.post(this::onScanFinished);
         }
     }
 

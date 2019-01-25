@@ -37,77 +37,65 @@ public class BleCentralImpl extends SimpleBleCentral {
 
     @Override
     protected void onScanStarted() {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onScanStarted: ");
-            if (mCentralStatusCallback != null) {
-                mCentralStatusCallback.onScanStarted();
-            }
-        });
+        super.onScanStarted();
+        Log.d(TAG, "onScanStarted: ");
     }
 
     @Override
     protected void onScanFinished() {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onScanFinished: " + mRemoteDevices);
-            mRemoteDevices.clear();
-        });
+        super.onScanFinished();
+        Log.d(TAG, "onScanFinished: " + mRemoteDevices);
+        mRemoteDevices.clear();
     }
 
     @Override
     protected void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi) {
-        getBlockingService().execute(() -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && result != null) {
-                ScanRecord scanRecord = result.getScanRecord();
-                if (scanRecord != null) {
-                    if (mRemoteDevices.add(remoteDevice)) {
-                        Log.d(TAG, "onScannedPeripheral: " + result);
-                        mCentralStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
-                    }
-                }
-
-            } else if (bleScanRecord != null) {
-                Log.d(TAG, "onScannedPeripheral: " + bleScanRecord.toString());
+        super.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && result != null) {
+            ScanRecord scanRecord = result.getScanRecord();
+            if (scanRecord != null) {
                 if (mRemoteDevices.add(remoteDevice)) {
-                    mCentralStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+                    Log.d(TAG, "onScannedPeripheral: " + result);
                 }
             }
-        });
+
+        } else if (bleScanRecord != null) {
+            Log.d(TAG, "onScannedPeripheral: " + bleScanRecord.toString());
+            if (mRemoteDevices.add(remoteDevice)) {
+            }
+        }
     }
 
     @Override
     protected void onConnectStarted(BluetoothGatt bluetoothGatt) {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onConnectStarted: ");
-        });
+        super.onConnectStarted(bluetoothGatt);
+        Log.d(TAG, "onConnectStarted: ");
     }
 
     @Override
     protected void onConnected(BluetoothGatt bluetoothGatt, int status) {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onConnected: ");
-            for (BluetoothGattService service : bluetoothGatt.getServices()) {
-                Log.i(TAG, "onConnected: " + service.getUuid());
-                for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
-                    Log.d(TAG, "onConnected: " + characteristic.getUuid() + ", prop: " + getCharacteristicProperty(characteristic));
-                    for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
-                        Log.v(TAG, "onConnected: " + descriptor.getUuid());
-                    }
+        super.onConnected(bluetoothGatt, status);
+        Log.d(TAG, "onConnected: ");
+        for (BluetoothGattService service : bluetoothGatt.getServices()) {
+            Log.i(TAG, "onConnected: " + service.getUuid());
+            for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
+                Log.d(TAG, "onConnected: " + characteristic.getUuid() + ", prop: " + getCharacteristicProperty(characteristic));
+                for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
+                    Log.v(TAG, "onConnected: " + descriptor.getUuid());
                 }
             }
-        });
+        }
     }
 
     @Override
     protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status) {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onConnectFailed: ");
-        });
+        super.onConnectFailed(bluetoothGatt, status);
+        Log.d(TAG, "onConnectFailed: ");
     }
 
     @Override
     protected void onDisconnected(BluetoothGatt bluetoothGatt) {
-        getBlockingService().execute(() -> {
-            Log.d(TAG, "onDisconnected: ");
-        });
+        super.onDisconnected(bluetoothGatt);
+        Log.d(TAG, "onDisconnected: ");
     }
 }

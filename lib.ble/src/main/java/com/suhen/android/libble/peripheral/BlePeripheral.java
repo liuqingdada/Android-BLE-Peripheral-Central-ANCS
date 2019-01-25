@@ -1,9 +1,9 @@
 package com.suhen.android.libble.peripheral;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
@@ -26,9 +26,12 @@ import android.widget.Toast;
 
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.peripheral.base.BleBasePeripheral;
+import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback;
 import com.suhen.android.libble.utils.ClsUtils;
 import com.suhen.android.libble.utils.StringUtil;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -45,6 +48,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
     private HandlerThread mGattServerCallbackThread;
     private Handler mGattServerCallbackHandler;
+    protected Queue<BasePeripheralCallback> mBasePeripheralCallbacks = new ConcurrentLinkedQueue<>();
 
     private HandlerThread mGattServerReadWriteThread;
     private Handler mGattServerReadWriteHandler;
@@ -63,18 +67,24 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
         mContext = context;
     }
 
-    @SuppressLint("ShowToast")
     @Override
     public void onCreate() {
-        mGattServerCallbackThread = new HandlerThread("gatt-server-callback-thread");
+        mGattServerCallbackThread = new HandlerThread("gatt-server-callback-looper-thread");
         mGattServerCallbackHandler = new Handler(mGattServerCallbackThread.getLooper());
 
-        mGattServerReadWriteThread = new HandlerThread("gatt-server-read-write-thread");
+        mGattServerReadWriteThread = new HandlerThread("gatt-server-read-write-looper-thread");
         mGattServerReadWriteHandler = new Handler(mGattServerReadWriteThread.getLooper());
 
         mBluetoothStatusReceiver = new BluetoothStatusReceiver();
         IntentFilter bleIntentFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mContext.registerReceiver(mBluetoothStatusReceiver, bleIntentFilter);
+    }
+
+    @Override
+    public void addBasePeripheralCallback(BasePeripheralCallback basePeripheralCallback) {
+        if (!mBasePeripheralCallbacks.contains(basePeripheralCallback)) {
+            mBasePeripheralCallbacks.add(basePeripheralCallback);
+        }
     }
 
     @Override
@@ -156,24 +166,57 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
     @Override
     public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
+        mGattServerCallbackHandler.post(() -> {
+            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
+                    basePeripheralCallback.onCharacteristicReadRequest(device, requestId, offset, characteristic);
+                }
+            }
+        });
     }
 
     @Override
     public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic,
             boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+        mGattServerCallbackHandler.post(() -> {
+            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(characteristic.getService().getUuid().toString()) &&
+                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(characteristic.getUuid().toString())) {
+                    basePeripheralCallback.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
+                }
+            }
+        });
     }
 
     @Override
     public void onDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptor descriptor) {
+        mGattServerCallbackHandler.post(() -> {
+            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
+                    basePeripheralCallback.onDescriptorReadRequest(device, requestId, offset, descriptor);
+                }
+            }
+        });
     }
 
     @Override
     public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor,
             boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+        mGattServerCallbackHandler.post(() -> {
+            for (BasePeripheralCallback basePeripheralCallback : mBasePeripheralCallbacks) {
+                if (basePeripheralCallback.getParentUuid().equalsIgnoreCase(descriptor.getCharacteristic().getUuid().toString()) &&
+                        basePeripheralCallback.getChildUuid().equalsIgnoreCase(descriptor.getUuid().toString())) {
+                    basePeripheralCallback.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value);
+                }
+            }
+        });
     }
 
     @Override
     public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
+        mGattServerReadWriteHandler.post(() -> mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null));
     }
 
     @Override

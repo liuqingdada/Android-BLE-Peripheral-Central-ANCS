@@ -69,11 +69,6 @@ public class SimpleBlePeripheral extends BlePeripheral {
     }
 
     @Override
-    protected void onReceiveBytes(byte[] bytes) {
-
-    }
-
-    @Override
     protected String generatePeripheralName() {
         String mac = StringUtil.getString(mContext, BLE.PERIPHERAL_MAC, "");
 
@@ -142,7 +137,6 @@ public class SimpleBlePeripheral extends BlePeripheral {
         if (characteristic.getUuid().toString().equals(CHAR_WRITE_UUID)) {
             // receive data:
             Log.i(TAG, "onCharacteristicWriteRequest: " + Arrays.toString(value));
-            onReceiveBytes(value);
             mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
         }
     }

@@ -1,5 +1,7 @@
 package com.suhen.android.libble.peripheral;
 
+import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback;
+
 /**
  * Created by liuqing
  * 2018/7/30.
@@ -7,6 +9,8 @@ package com.suhen.android.libble.peripheral;
  */
 public interface IPeripheral {
     void onCreate();
+
+    void addBasePeripheralCallback(BasePeripheralCallback basePeripheralCallback);
 
     void setup();
 

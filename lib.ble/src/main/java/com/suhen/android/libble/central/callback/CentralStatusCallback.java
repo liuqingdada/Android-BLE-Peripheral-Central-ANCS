@@ -18,22 +18,22 @@ import java.util.UUID;
  */
 public class CentralStatusCallback extends BleBaseCentral {
     @Override
-    public int scanTimeout() {
+    public final int scanTimeout() {
         return 0;
     }
 
     @Override
-    public boolean isFactoryReset() {
+    public final boolean isFactoryReset() {
         return false;
     }
 
     @Override
-    public UUID[] scanFilters() {
+    public final UUID[] scanFilters() {
         return new UUID[0];
     }
 
     @Override
-    public List<ScanFilter> scanLollipopFilters() {
+    public final List<ScanFilter> scanLollipopFilters() {
         return null;
     }
 

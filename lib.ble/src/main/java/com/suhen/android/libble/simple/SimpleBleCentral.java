@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * 18-8-5.
  * Email: 1239604859@qq.com
  */
-public abstract class SimpleBleCentral extends BleCentral {
+public class SimpleBleCentral extends BleCentral {
     private volatile ExecutorService mExecutorService;
 
     protected SimpleBleCentral(Context context) {
@@ -54,30 +54,65 @@ public abstract class SimpleBleCentral extends BleCentral {
 
     @Override
     protected void onScanStarted() {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onScanStarted();
+            }
+        });
     }
 
     @Override
     protected void onScanFinished() {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onScanFinished();
+            }
+        });
     }
 
     @Override
     protected void onScannedPeripheral(ScanResult result, BleScanRecord bleScanRecord, BluetoothDevice remoteDevice, int rssi) {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onScannedPeripheral(result, bleScanRecord, remoteDevice, rssi);
+            }
+        });
     }
 
     @Override
     protected void onConnectStarted(BluetoothGatt bluetoothGatt) {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onConnectStarted(bluetoothGatt);
+            }
+        });
     }
 
     @Override
     protected void onConnected(BluetoothGatt bluetoothGatt, int status) {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onConnected(bluetoothGatt, status);
+            }
+        });
     }
 
     @Override
     protected void onConnectFailed(BluetoothGatt bluetoothGatt, int status) {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onConnectFailed(bluetoothGatt, status);
+            }
+        });
     }
 
     @Override
     protected void onDisconnected(BluetoothGatt bluetoothGatt) {
+        getBlockingService().execute(() -> {
+            if (mCentralStatusCallback != null) {
+                mCentralStatusCallback.onDisconnected(bluetoothGatt);
+            }
+        });
     }
 
     protected synchronized ExecutorService getBlockingService() {

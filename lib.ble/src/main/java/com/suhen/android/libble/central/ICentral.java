@@ -33,9 +33,11 @@ public interface ICentral {
 
     void stopScan();
 
-    void addBleBaseCallback(BaseCentralCallback baseCentralCallback);
+    void addBaseCentralCallback(BaseCentralCallback baseCentralCallback);
 
     BluetoothGatt connect(BluetoothDevice bluetoothDevice, boolean autoConnect, int transport, int phy);
+
+    void disconnect();
 
     boolean isConnected();
 
