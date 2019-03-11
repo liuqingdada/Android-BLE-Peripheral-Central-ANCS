@@ -362,7 +362,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
         try {
             // step 1
-            String btAddress = ClsUtils.getBtAddressViaReflection();
+            String btAddress = ClsUtils.getBtAddress();
             StringUtil.putString(mContext, BLE.PERIPHERAL_MAC, btAddress);
 
             // step 2

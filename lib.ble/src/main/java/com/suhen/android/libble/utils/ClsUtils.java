@@ -1,5 +1,6 @@
 package com.suhen.android.libble.utils;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
@@ -7,10 +8,41 @@ import android.util.Log;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+@SuppressWarnings("JavaReflectionMemberAccess")
+@SuppressLint("PrivateApi")
 public class ClsUtils {
-    public static String getBtAddressViaReflection() {
+    private static final String DEFAULT_MAC_ADDRESS_1 = "02:00:00:00:00:00";
+    private static final String DEFAULT_MAC_ADDRESS_2 = "00:00:46:66:30:01";
+
+    @SuppressLint("HardwareIds")
+    public static String getBtAddress() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        String bluetoothMacAddress = "";
+        String address = bluetoothAdapter.getAddress(); // step 1
+
+        if (isValidateAddress(address)) {
+            return address;
+
+        } else {
+            address = getBluetoothAddressSdk23(); // step 2
+
+            if (isValidateAddress(address)) {
+                return address;
+
+            } else {
+                address = getBtAddressViaReflection(); // step 3
+
+                if (isValidateAddress(address)) {
+                    return address;
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+
+    private static String getBtAddressViaReflection() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        String bluetoothMacAddress = null;
         try {
             Field mServiceField = bluetoothAdapter.getClass().getDeclaredField("mService");
             mServiceField.setAccessible(true);
@@ -23,6 +55,25 @@ public class ClsUtils {
         } catch (Exception ignore) {
         }
         return bluetoothMacAddress;
+    }
+
+    private static boolean isValidateAddress(String address) {
+        return address != null && !address.equals(DEFAULT_MAC_ADDRESS_1) && !address.equals(DEFAULT_MAC_ADDRESS_2) && BluetoothAdapter.checkBluetoothAddress(address);
+    }
+
+    private static String getBluetoothAddressSdk23() {
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        Class<? extends BluetoothAdapter> btAdapterClass = adapter.getClass();
+        try {
+            Class<?> btClass = Class.forName("android.bluetooth.IBluetooth");
+            Field bluetooth = btAdapterClass.getDeclaredField("mService");
+            bluetooth.setAccessible(true);
+            Method btAddress = btClass.getMethod("getAddress");
+            btAddress.setAccessible(true);
+            return (String) btAddress.invoke(bluetooth.get(adapter));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static boolean pair(String mac) {
