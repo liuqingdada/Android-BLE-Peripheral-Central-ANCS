@@ -27,7 +27,7 @@ Android Bluetooth Low Energy (BLE) 快速开发框架。分为外设（Periphera
                    .setReportDelay(REPORT_DELAY)
                    .setUseHardwareBatchingIfSupported(false)
                    .build()
-       
+
                val scanner = BluetoothLeScannerCompat.getScanner()
                scanner.startScan(null, settings, scanCallback)
                LogUtil.d(TAG, "startLeCompatScan: ")
@@ -97,36 +97,36 @@ Android Bluetooth Low Energy (BLE) 快速开发框架。分为外设（Periphera
              mBluetoothGatt.registerClient(new ParcelUuid(uuid), this);
              wait(REGISTRATION_CALLBACK_TIMEOUT_MILLIS);
            } catch (InterruptedException | RemoteException e) {
-             Log.e(TAG, "application registeration exception", e); 
+             Log.e(TAG, "application registeration exception", e);
              postCallbackError(mScanCallback, ScanCallback.SCAN_FAILED_INTERNAL_ERROR);
-           }   
+           }
            if (mClientIf > 0) {
              mLeScanClients.put(mScanCallback, this);
            } else {
              // Registration timed out or got exception, reset clientIf to -1 so no
              // subsequent operations can proceed.
-             if (mClientIf == 0) mClientIf = -1; 
+             if (mClientIf == 0) mClientIf = -1;
              postCallbackError(mScanCallback,
                                ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED);
-           }   
-         }   
-       }   
-       
+           }
+         }
+       }
+
        public void stopLeScan() {
          synchronized (this) {
            if (mClientIf <= 0) {
              Log.e(TAG, "Error state, mLeHandle: " + mClientIf);
              return;
-           }   
+           }
            try {
              mBluetoothGatt.stopScan(mClientIf, false);
              mBluetoothGatt.unregisterClient(mClientIf);
            } catch (RemoteException e) {
-             Log.e(TAG, "Failed to stop scan and unregister", e); 
-           }   
-           mClientIf = -1; 
-         }   
-       } 
+             Log.e(TAG, "Failed to stop scan and unregister", e);
+           }
+           mClientIf = -1;
+         }
+       }
        ```
 
        问题的切入点就在这个地方
@@ -136,8 +136,7 @@ Android Bluetooth Low Energy (BLE) 快速开发框架。分为外设（Periphera
        * 另一个是停止扫描并且unregisterClient。
        * 那么MAX client的问题很有肯就是App注册后被杀，系统没有回收这个Client
 
-       问题解决：我们开始扫描三秒后如果注册成功，一定能拿到这个ScannerId（ ClientIf ），保存起来，我们的扫描Service刚创建的时候反射一下unregisterClient。实际开发中，很有效果。这部分代码已上传到工程BleCompatibility目录下。
+       问题解决：我们开始扫描三秒后如果注册成功，一定能拿到这个ScannerId（ ClientIf ），保存起来，我们的扫描Service刚创建的时候反射一下unregisterClient。实际开发中，很有效果。这部分代码已上传到工程[BleCompatibility目录下](https://github.com/liuqingdada/Android-BLE-Peripheral-Central-ANCS/tree/master/BleCompatibility)。
 
-       其他坑：安卓8.0之后，这个地方的方法名变了(unregisterScanner)，并且ClientIf变成了ScannerId。响应的，我们需要反射这个新的方法，做一下版本适配。目前安卓9.0上已测试通过。
+       其他坑：安卓8.0之后，这个地方的方法名变了(unregisterScanner)，并且ClientIf变成了ScannerId。所以我们需要反射这个新的方法，做一下版本适配。目前安卓9.0上已测试通过。
 
-       
