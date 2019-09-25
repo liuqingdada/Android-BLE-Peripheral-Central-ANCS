@@ -134,7 +134,7 @@ Android Bluetooth Low Energy (BLE) 快速开发框架。分为外设（Periphera
        * 一个是registerClient，系统也很暴力，等待两秒。。。也就是这里回调的注册失败。
 
        * 另一个是停止扫描并且unregisterClient。
-       * 那么MAX client的问题很有肯就是App注册后被杀，系统没有回收这个Client
+       * 那么MAX client的问题很有可能就是App注册后被杀，系统没有回收这个Client
 
        问题解决：我们开始扫描三秒后如果注册成功，一定能拿到这个ScannerId（ ClientIf ），保存起来，我们的扫描Service刚创建的时候反射一下unregisterClient。实际开发中，很有效果。这部分代码已上传到工程[BleCompatibility目录下](https://github.com/liuqingdada/Android-BLE-Peripheral-Central-ANCS/tree/master/BleCompatibility)。
 
