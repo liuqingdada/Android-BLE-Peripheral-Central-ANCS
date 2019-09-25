@@ -136,7 +136,7 @@ Android Bluetooth Low Energy (BLE) 快速开发框架。分为外设（Periphera
        * 另一个是停止扫描并且unregisterClient。
        * 那么MAX client的问题很有可能就是App注册后被杀，系统没有回收这个Client
 
-       问题解决：我们开始扫描三秒后如果注册成功，一定能拿到这个ScannerId（ ClientIf ），保存起来，我们的扫描Service刚创建的时候反射一下unregisterClient。实际开发中，很有效果。这部分代码已上传到工程[BleCompatibility目录下](https://github.com/liuqingdada/Android-BLE-Peripheral-Central-ANCS/tree/master/BleCompatibility), 另外还有GattServer的源码，感觉这才是精髓。
+       问题解决：我们开始扫描三秒后如果注册成功，一定能拿到这个ScannerId（ ClientIf ），保存起来，我们的扫描Service刚创建的时候反射一下unregisterClient。实际开发中，很有效果。这部分代码已上传到工程[BleCompatibility目录下](https://github.com/liuqingdada/Android-BLE-Peripheral-Central-ANCS/tree/master/BleCompatibility), 另外还有GattServer的源码。
 
        其他坑：安卓8.0之后，这个地方的方法名变了(unregisterScanner)，并且ClientIf变成了ScannerId。所以我们需要反射这个新的方法，做一下版本适配。目前安卓9.0上已测试通过。
 
