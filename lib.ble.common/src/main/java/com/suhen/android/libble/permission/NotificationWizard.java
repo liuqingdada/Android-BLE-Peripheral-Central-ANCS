@@ -20,8 +20,15 @@ import androidx.core.app.NotificationCompat;
  */
 public class NotificationWizard {
 
-    public static Notification generateNotification(Context context, int importance, int icon, Class<?> clazz, int requestCode) {
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    public static Notification generateNotification(
+            Context context,
+            int importance,
+            int icon,
+            Class<?> clazz,
+            int requestCode
+    ) {
+        NotificationManager notificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) {
             throw new NullPointerException();
         }
@@ -49,10 +56,12 @@ public class NotificationWizard {
 
 
         Intent notificationIntent = new Intent(context.getApplicationContext(), clazz);
-        PendingIntent pendingIntent = PendingIntent.getService(context.getApplicationContext(),
+        PendingIntent pendingIntent = PendingIntent.getService(
+                context.getApplicationContext(),
                 requestCode,
                 notificationIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT
+        );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, appname)
                 .setSmallIcon(icon)

@@ -1,5 +1,6 @@
 package com.android.cooper.app.ble.remotecontrol.main
 
+import android.Manifest
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -24,9 +25,8 @@ import com.suhen.android.libble.nrfscan.BleCompatibility
 import com.suhen.android.libble.nrfscan.BleScanManager
 import com.suhen.android.libble.nrfscan.FastPairConstant
 import com.suhen.android.libble.permission.PermissionWizard
-import com.suhen.android.libble.utils.AppUtils
+import com.android.common.utils.AppUtils
 import com.suhen.android.libble.utils.WeakHandler
-import com.yanzhenjie.permission.runtime.Permission
 import kotlinx.android.synthetic.main.activity_main.*
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 
@@ -300,8 +300,8 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val bleScanPermission = arrayOf(
-                Permission.ACCESS_FINE_LOCATION,
-                Permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
             )
             ActivityCompat.requestPermissions(this, bleScanPermission, 100)
         }

@@ -20,7 +20,7 @@ import timber.log.Timber;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class LogUtil {
-    private static final String GLOBAL_LOG_TAG = "MobvoiGlobalDebug";
+    private static final String GLOBAL_LOG_TAG = "AppGlobalDebug";
 
     private static boolean sJvmLogger = false;
 

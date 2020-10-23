@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import com.android.common.utils.LogUtil
-import com.suhen.android.libble.utils.AppUtils
+import com.android.common.utils.AppUtils
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 

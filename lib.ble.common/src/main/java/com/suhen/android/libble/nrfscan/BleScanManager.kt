@@ -1,5 +1,6 @@
 package com.suhen.android.libble.nrfscan
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,8 +10,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import com.android.common.utils.LogUtil
 import com.suhen.android.libble.permission.PermissionWizard
-import com.suhen.android.libble.utils.AppUtils
-import com.yanzhenjie.permission.runtime.Permission
+import com.android.common.utils.AppUtils
 import no.nordicsemi.android.support.v18.scanner.ScanCallback
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 import java.util.concurrent.atomic.AtomicBoolean
@@ -75,8 +75,8 @@ object BleScanManager {
         }
         if (!PermissionWizard.hasPermissions(
                 context,
-                Permission.ACCESS_FINE_LOCATION,
-                Permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
             )
         ) {
             LogUtil.d(TAG, "startLeScan: Location permission is not allowed")

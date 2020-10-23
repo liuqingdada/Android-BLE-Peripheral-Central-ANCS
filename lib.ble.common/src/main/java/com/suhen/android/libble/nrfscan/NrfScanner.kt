@@ -2,7 +2,7 @@ package com.suhen.android.libble.nrfscan
 
 import android.os.Build
 import com.android.common.utils.LogUtil
-import com.suhen.android.libble.utils.AppUtils
+import com.android.common.utils.AppUtils
 import com.android.common.utils.SharedPrefsUtils
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat
 import no.nordicsemi.android.support.v18.scanner.ScanCallback

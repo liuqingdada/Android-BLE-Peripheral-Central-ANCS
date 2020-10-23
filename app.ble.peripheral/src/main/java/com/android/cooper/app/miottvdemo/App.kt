@@ -1,9 +1,8 @@
 package com.android.cooper.app.miottvdemo
 
 import android.app.Application
-import com.android.common.utils.ApplicationUtils
 import com.android.cooper.app.miottvdemo.log.LogTreeProxy
-import com.suhen.android.libble.utils.AppUtils
+import com.android.common.utils.AppUtils
 
 /**
  * Created by cooper
@@ -13,7 +12,6 @@ import com.suhen.android.libble.utils.AppUtils
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        ApplicationUtils.init(this)
         AppUtils.init(this)
 
         LogTreeProxy.main()

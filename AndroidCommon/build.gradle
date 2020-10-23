@@ -1,7 +1,9 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-apply from: "${rootDir}/android_project_common.gradle"
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'kotlin-android-extensions'
+}
+apply from: "${rootDir}/module_plugin.gradle"
 
 android {
     compileSdkVersion versions.compileSdk
@@ -10,8 +12,6 @@ android {
         minSdkVersion 17
 
         consumerProguardFiles 'consumer-proguard-rules.pro'
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     sourceSets {

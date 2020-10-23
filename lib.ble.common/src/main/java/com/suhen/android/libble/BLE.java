@@ -39,8 +39,12 @@ public final class BLE {
     /**
      * Create a new peripheral instance.
      */
-    public synchronized static IPeripheral newPeripheral(Class<? extends BlePeripheral> clazz, Context context) throws Exception {
-        Constructor<? extends BlePeripheral> constructor = clazz.getDeclaredConstructor(Context.class);
+    public synchronized static IPeripheral newPeripheral(
+            Class<? extends BlePeripheral> clazz,
+            Context context
+    ) throws Exception {
+        Constructor<? extends BlePeripheral> constructor =
+                clazz.getDeclaredConstructor(Context.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context);
     }
@@ -51,7 +55,8 @@ public final class BLE {
     public static boolean isSupportBle(Context context) {
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
 
-            BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+            BluetoothManager bluetoothManager =
+                    (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
             if (bluetoothManager == null) {
                 return false;
             }

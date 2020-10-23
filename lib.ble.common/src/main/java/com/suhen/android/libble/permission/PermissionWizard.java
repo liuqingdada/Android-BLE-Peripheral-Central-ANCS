@@ -1,23 +1,13 @@
 package com.suhen.android.libble.permission;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.provider.Settings;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
-
-import com.suhen.android.libble.R;
-import com.yanzhenjie.permission.AndPermission;
-import com.yanzhenjie.permission.runtime.Permission;
-
-import java.io.File;
-import java.util.List;
 
 /**
  * Created by yangliuqing
@@ -25,7 +15,6 @@ import java.util.List;
  * Email: 1239604859@qq.com
  */
 public class PermissionWizard {
-    private static final int HANDLE_DENIED_CODE = 1023;
 
     private PermissionWizard() {
     }
@@ -68,104 +57,6 @@ public class PermissionWizard {
             }
         }
         return true;
-    }
-
-    /**
-     * Request permissions.
-     */
-    @SuppressLint("WrongConstant")
-    public static void requestPermission(
-            Context context,
-            PermissionCallback callback,
-            String... permissions
-    ) {
-        AndPermission.with(context)
-                .runtime()
-                .permission(permissions)
-                .rationale(new RuntimeRationale())
-                .onGranted(pl -> callback.onGranted())
-                .onDenied(pl -> {
-                    callback.onDenied();
-                    handleDenied(context, pl);
-                })
-                .start();
-    }
-
-    private static void handleDenied(Context context, List<String> permissions) {
-        if (AndPermission.hasAlwaysDeniedPermission(context, permissions)) {
-            showSettingDialog(context, permissions);
-        }
-    }
-
-    /**
-     * Display setting dialog.
-     */
-    private static void showSettingDialog(Context context, final List<String> permissions) {
-        List<String> permissionNames = Permission.transformText(context, permissions);
-        String message = context.getString(
-                R.string.message_permission_always_failed,
-                TextUtils.join("\n", permissionNames)
-        );
-
-        new AlertDialog.Builder(context)
-                .setCancelable(false)
-                .setTitle(R.string.title_dialog)
-                .setMessage(message)
-                .setPositiveButton(R.string.setting, (dialog, which) -> setPermission(context))
-                .setNegativeButton(R.string.cancel, (dialog, which) -> {
-                })
-                .show();
-    }
-
-    /**
-     * Set permissions.
-     */
-    private static void setPermission(Context context) {
-        AndPermission.with(context)
-                .runtime()
-                .setting()
-//                .onComeback(() -> {
-//                        Toast.makeText(context, R.string.message_setting_comeback, Toast.LENGTH_SHORT).show();
-//                })
-                .start(HANDLE_DENIED_CODE);
-    }
-
-    /**
-     * Install package.
-     */
-    public static void installPackage(Context context, PermissionCallback callback, File apkFile) {
-        AndPermission.with(context)
-                .install()
-                .file(apkFile)
-                .rationale(new InstallRationale())
-                .onGranted(data -> {
-                    // Installing.
-                    callback.onGranted();
-                })
-                .onDenied(data -> {
-                    // The user refused to install.
-                    callback.onDenied();
-                })
-                .start();
-    }
-
-    public static void requestPermissionForAlertWindow(
-            Context context,
-            PermissionCallback callback
-    ) {
-        AndPermission.with(context)
-                .overlay()
-                .rationale(new OverlayRationale())
-                .onGranted(data -> callback.onGranted())
-                .onDenied(data -> callback.onDenied())
-                .start();
-    }
-
-    public static abstract class PermissionCallback {
-        public abstract void onGranted();
-
-        public void onDenied() {
-        }
     }
 
     public static boolean isLocationEnable(Context context) {

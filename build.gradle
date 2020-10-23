@@ -1,8 +1,8 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext {
-        androidProjectCommon = "${rootDir}/AndroidCommon/android_project_common.gradle"
-        androidModuleCommon = "${rootDir}/AndroidCommon/android_module_common.gradle"
+        androidProjectCommon = "${rootDir}/AndroidCommon/project_common.gradle"
+        androidModuleCommon = "${rootDir}/AndroidCommon/module_common.gradle"
     }
     apply from: "${androidProjectCommon}"
 

@@ -1,0 +1,7 @@
+apply from: "${androidModuleCommon}"
+
+android {
+    lintOptions {
+        error 'Recycle', 'Wakelock', 'DrawAllocation'
+    }
+}

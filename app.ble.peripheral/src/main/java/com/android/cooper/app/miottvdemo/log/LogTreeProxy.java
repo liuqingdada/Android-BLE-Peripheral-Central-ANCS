@@ -3,10 +3,11 @@ package com.android.cooper.app.miottvdemo.log;
 import android.content.Context;
 import android.os.Environment;
 
-import com.android.common.utils.ApplicationUtils;
+import com.android.common.utils.AppUtils;
 import com.android.common.utils.ExecutorsKt;
 import com.android.common.utils.FileLogger;
 import com.android.common.utils.LogUtil;
+import com.android.common.utils.ProcessUtil;
 
 import java.io.File;
 import java.util.Arrays;
@@ -58,7 +59,7 @@ public class LogTreeProxy {
     private static String initLogDir() {
         boolean mounted = Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
         if (mounted) {
-            Context context = ApplicationUtils.getApplication().getApplicationContext();
+            Context context = AppUtils.application.getApplicationContext();
             File logDir = new File(context.getExternalFilesDir(null), "logs");
             return logDir.getAbsolutePath();
         } else {
@@ -67,10 +68,10 @@ public class LogTreeProxy {
     }
 
     public static void main(String... args) {
-        Context context = ApplicationUtils.getApplication().getApplicationContext();
-        String processName = ApplicationUtils.getCurrentProcessName(context);
-        String processNameSuffix = ApplicationUtils.getCurrentProcessNameSuffix(processName);
-        boolean isMainpProcess = ApplicationUtils.isMainProcess(context);
+        Context context = AppUtils.application.getApplicationContext();
+        String processName = ProcessUtil.getCurrentProcessName(context);
+        String processNameSuffix = ProcessUtil.getCurrentProcessNameSuffix(processName);
+        boolean isMainpProcess = ProcessUtil.isMainProcess(context);
         if (isMainpProcess) {
             new LogTreeProxy(true, processNameSuffix);
         }

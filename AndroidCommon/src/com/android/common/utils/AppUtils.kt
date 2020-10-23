@@ -1,8 +1,11 @@
-package com.suhen.android.libble.utils
+package com.android.common.utils
 
 import android.app.Application
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.text.TextUtils
 
 /**
  * Created by cooper
@@ -10,6 +13,8 @@ import android.os.Looper
  * Email: 1239604859@qq.com
  */
 object AppUtils {
+    private const val TAG = "AppUtils"
+
     lateinit var application: Application
 
     val handler = Handler(Looper.getMainLooper())

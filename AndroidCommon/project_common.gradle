@@ -1,5 +1,5 @@
 /**
- * File: 'android_project_common.gradle'
+ * File: 'project_common.gradle'
  * All android projects can copy and include this file.
  */
 
@@ -29,14 +29,17 @@ allprojects {
 ext {
     versions = [
             // compile
-            'compileSdk'       : 29,
-            'buildTools'       : "29.0.3",
+            'compileSdk'       : 30,
+            'buildTools'       : "30.0.2",
 
             // Android official support
             'kotlin'           : "1.4.10",
-            'androidxCore'     : "1.2.0",
+            'androidxCore'     : "1.3.2",
+            'appcompat'        : "1.2.0",
+            'material'         : "1.2.0",
+            'constraintlayout' : "2.0.2",
             'annotation'       : "1.1.0",
-            'fragment'         : "1.2.0",
+            'fragment'         : "1.2.4",
             'preference'       : "1.1.1",
             'palette'          : "1.0.0",
             'recyclerView'     : "1.1.0",
@@ -52,10 +55,10 @@ ext {
             'work'             : "2.3.4",
 
             // test
-            'testCore'         : "1.2.0",
-            'espresso'         : "3.2.0",
+            'testCore'         : "1.3.0",
+            'espresso'         : "3.3.0",
             'uiautomator'      : "2.2.0",
-            'truth'            : "1.0.1",
+            'truth'            : "1.3.0",
             'hamcrest'         : "1.3",
             'mockito'          : "1.10.19",
             'powermock'        : "1.6.6",
@@ -130,10 +133,10 @@ ext {
                     'localBroadcast'   : "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0",
                     'collection'       : "androidx.collection:collection-ktx:1.1.0",
                     // UI
-                    'appcompat'        : "androidx.appcompat:appcompat:1.2.0",
-                    'design'           : "com.google.android.material:material:1.2.0",
+                    'appcompat'        : "androidx.appcompat:appcompat:${versions.appcompat}",
+                    'design'           : "com.google.android.material:material:${versions.material}",
                     'preference'       : "androidx.preference:preference-ktx:${versions.preference}",
-                    'constraintLayout' : 'androidx.constraintlayout:constraintlayout:2.0.2',
+                    'constraintLayout' : "androidx.constraintlayout:constraintlayout:${versions.constraintlayout}",
                     'cardview'         : "androidx.cardview:cardview:1.0.0",
                     'gridlayout'       : "androidx.gridlayout:gridlayout:1.0.0",
                     'palette'          : "androidx.palette:palette-ktx:${versions.palette}",
@@ -220,7 +223,7 @@ ext {
                     'monitor'          : "androidx.test:monitor:${versions.testCore}",
                     'orchestrator'     : "androidx.test:orchestrator:${versions.testCore}",
                     'truthAndroidX'    : "androidx.test.ext:truth:${versions.testCore}",
-                    'junit'            : "androidx.test.ext:junit:1.1.1",
+                    'junit'            : "androidx.test.ext:junit:1.1.2",
                     'junitKtx'         : "androidx.test.ext:junit-ktx:1.1.1",
                     // espresso
                     'espressoCore'     : "androidx.test.espresso:espresso-core:${versions.espresso}",
