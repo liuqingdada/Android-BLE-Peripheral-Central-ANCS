@@ -1,6 +1,6 @@
 package com.suhen.android.libble;
 
-import com.suhen.android.libble.utils.ByteZipUtil;
+import com.suhen.android.libble.message.utils.ByteZipUtil;
 
 import org.junit.Test;
 

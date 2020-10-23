@@ -9,9 +9,8 @@ import android.content.Context;
 import android.os.ParcelUuid;
 
 import com.android.common.utils.LogUtil;
-
+import com.suhen.android.libble.message.utils.ByteUtil;
 import com.suhen.android.libble.peripheral.SimpleBlePeripheral;
-import com.suhen.android.libble.utils.ByteUtil;
 
 import java.util.UUID;
 

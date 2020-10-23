@@ -21,7 +21,7 @@ import java.util.zip.ZipOutputStream;
  * Email: 1239604859@qq.com
  */
 
-public class ByteZipUtils {
+public class ByteZipUtil {
     /***
      * 压缩GZip
      */

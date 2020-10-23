@@ -1,6 +1,6 @@
 package com.suhen.android.libble.message;
 
-import com.suhen.android.libble.message.utils.ByteUtils;
+import com.suhen.android.libble.message.utils.ByteUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,12 +55,12 @@ public abstract class BleMessage {
          */
         for (int i = 0; i < time; i++) {
             byte[] bytes = Arrays.copyOfRange(data, i * size, (i + 1) * size);
-            bytes = ByteUtils.combine2Bytes(PACKET_DEFAULT, bytes);
+            bytes = ByteUtil.combine2Bytes(PACKET_DEFAULT, bytes);
             packets.add(bytes);
         }
         if (remain > 0) {
             byte[] bytes = Arrays.copyOfRange(data, length - remain, length);
-            bytes = ByteUtils.combine2Bytes(PACKET_DEFAULT, bytes);
+            bytes = ByteUtil.combine2Bytes(PACKET_DEFAULT, bytes);
             packets.add(bytes);
         }
 
