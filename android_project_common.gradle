@@ -1,0 +1,12 @@
+apply from: "${androidModuleCommon}"
+
+android {
+    lintOptions {
+        textReport true
+        textOutput 'stdout'
+
+        abortOnError true
+
+        error 'Recycle','Wakelock','DrawAllocation'
+    }
+}

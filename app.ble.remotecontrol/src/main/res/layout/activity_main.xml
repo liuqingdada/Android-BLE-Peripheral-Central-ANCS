@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".main.MainActivity">
+
+    <Button
+        android:id="@+id/btScan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="BLE SCAN"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btHome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="HOME"
+        app:layout_constraintStart_toStartOf="@+id/btScan"
+        app:layout_constraintTop_toBottomOf="@+id/btScan" />
+
+    <Button
+        android:id="@+id/btBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="BACK"
+        app:layout_constraintStart_toStartOf="@+id/btHome"
+        app:layout_constraintTop_toBottomOf="@+id/btHome" />
+
+    <Button
+        android:id="@+id/btVolumeUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="VOLUME UP"
+        app:layout_constraintStart_toStartOf="@+id/btBack"
+        app:layout_constraintTop_toBottomOf="@+id/btBack" />
+
+    <Button
+        android:id="@+id/btVolumeDown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="VOLUME DOWN"
+        app:layout_constraintStart_toStartOf="@+id/btVolumeUp"
+        app:layout_constraintTop_toBottomOf="@+id/btVolumeUp" />
+
+    <Button
+        android:id="@+id/btConnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:enabled="false"
+        android:text="CONNECT"
+        app:layout_constraintStart_toEndOf="@+id/btScan"
+        app:layout_constraintTop_toTopOf="@+id/btScan" />
+
+    <Button
+        android:id="@+id/btDisconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="DISCONNECT"
+        app:layout_constraintStart_toEndOf="@+id/btConnect"
+        app:layout_constraintTop_toTopOf="@+id/btConnect" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

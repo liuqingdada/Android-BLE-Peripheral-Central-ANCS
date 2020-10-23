@@ -1,1 +1,9 @@
-include ':app.central', ':app.peripheral', ':lib.ble'
+include ':app.ble.peripheral'
+include ':app.ble.remotecontrol'
+include ':lib.ble.common'
+include ':lib.ble.logic'
+
+include ':AndroidCommon'
+project(':AndroidCommon').projectDir = file('./AndroidCommon')
+
+rootProject.name = "Android-BLE-Peripheral-Central-ANCS"

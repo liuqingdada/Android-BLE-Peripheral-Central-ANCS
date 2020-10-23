@@ -1,0 +1,42 @@
+/**
+ * File: 'android_module_common.gradle'
+ * All android projects can copy and include this file.
+ */
+
+android {
+    compileSdkVersion versions.compileSdk
+
+    defaultConfig {
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    lintOptions {
+        textReport true
+        textOutput 'stdout'
+
+        abortOnError true
+
+        disable 'MissingTranslation', 'ExpiredTargetSdkVersion'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
+    testOptions {
+        unitTests.all {
+            // All the usual Gradle options.
+            testLogging {
+                events "passed", "skipped", "failed", "standardOut", "standardError"
+                outputs.upToDateWhen { false }
+                showStandardStreams = true
+            }
+        }
+        unitTests.includeAndroidResources = true
+    }
+}
