@@ -58,12 +58,12 @@ ext {
             'testCore'         : "1.3.0",
             'espresso'         : "3.3.0",
             'uiautomator'      : "2.2.0",
-            'truth'            : "1.3.0",
             'hamcrest'         : "1.3",
             'mockito'          : "1.10.19",
             'powermock'        : "1.6.6",
             'robolectric'      : "4.2",
             'mockk'            : "1.9.3",
+            'truth'            : "1.1", // google ext truth
 
             // google
             'gms'              : "12.0.1",
