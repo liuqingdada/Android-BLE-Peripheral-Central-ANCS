@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothGattCharacteristic;
 
 import com.suhen.android.libble.message.BleMessage;
 import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback;
+import com.suhen.android.libble.peripheral.callback.BluetoothCallback;
 
 /**
  * Created by liuqing
@@ -30,4 +31,6 @@ public interface IPeripheral {
     void indicate(BluetoothGattCharacteristic characteristic, BleMessage message);
 
     void onDestroy();
+
+    void setBluetoothCallback(BluetoothCallback bluetoothCallback);
 }

@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import com.android.common.utils.LogUtil
 import com.android.common.utils.AppUtils
+import com.suhen.android.libble.central.ICentral.Companion.UUID_CLIENT_CHARACTERISTIC_CONFIG_DESCRIPTOR
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -17,20 +18,21 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * Date: 20-10-22.
  * Email: yangliuqing@xiaomi.com
  */
-class BleCentral(val device: BluetoothDevice) : ICentral {
+abstract class BleCentral(override val device: BluetoothDevice) : ICentral {
     companion object {
         private const val TAG = "BleCentral"
-
-        private const val UUID_CLIENT_CHARACTERISTIC_CONFIG_DESCRIPTOR =
-            "00002902-0000-1000-8000-00805f9b34fb"
     }
 
+    @BtProfileState
     @Volatile
-    var centralGattCallback: CentralGattCallback? = null
+    override var lastState = BluetoothProfile.STATE_DISCONNECTED
 
     @Volatile
-    var lastState = BluetoothProfile.STATE_DISCONNECTED
-        private set
+    override var centralGattCallback: CentralGattCallback? = null
+
+    override var rssiOperator: CentralGattOperator? = null
+
+    override var mtuOperator: CentralGattOperator? = null
 
     @Volatile
     private var bluetoothGatt: BluetoothGatt? = null
@@ -48,10 +50,6 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
     private val handler = Handler(handlerThread.looper)
 
     private val operators = ConcurrentLinkedQueue<CentralGattOperator>()
-
-    val rssiOperator: CentralGattOperator? = null
-
-    val mtuOperator: CentralGattOperator? = null
 
     private var isServicesDiscovered = false
 
@@ -162,7 +160,7 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun connect(autoConnect: Boolean) {
+    override fun connect(autoConnect: Boolean) {
         val gatt = when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
                 device.connectGatt(context, autoConnect, gattCallback, TRANSPORT_LE, PHY_LE_1M_MASK)
@@ -187,19 +185,19 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun disconnect() {
+    override fun disconnect() {
         disconnectGatt()
     }
 
-    fun addOperator(operator: CentralGattOperator) {
+    override fun addOperator(operator: CentralGattOperator) {
         operators.add(operator)
     }
 
-    fun removeOperator(operator: CentralGattOperator) {
+    override fun removeOperator(operator: CentralGattOperator) {
         operators.remove(operator)
     }
 
-    fun readCharacter(operator: CentralGattOperator) {
+    override fun readCharacter(operator: CentralGattOperator) {
         if (checkService()) {
             val service = bluetoothGatt?.getService(UUID.fromString(operator.serviceUUID))
             val character = service?.getCharacteristic(UUID.fromString(operator.characterUUID))
@@ -225,7 +223,7 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun writeCharacter(operator: CentralGattOperator, data: ByteArray) {
+    override fun writeCharacter(operator: CentralGattOperator, data: ByteArray) {
         if (checkService()) {
             val service = bluetoothGatt?.getService(UUID.fromString(operator.serviceUUID))
             val character = service?.getCharacteristic(UUID.fromString(operator.characterUUID))
@@ -251,10 +249,10 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun notifyCharacter(
+    override fun notifyCharacter(
         operator: CentralGattOperator,
         enable: Boolean,
-        useCharacterDescriptor: Boolean = false
+        useCharacterDescriptor: Boolean
     ) {
         if (checkService()) {
             val service = bluetoothGatt?.getService(UUID.fromString(operator.serviceUUID))
@@ -306,10 +304,10 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun indicateCharacter(
+    override fun indicateCharacter(
         operator: CentralGattOperator,
         enable: Boolean,
-        useCharacterDescriptor: Boolean = false
+        useCharacterDescriptor: Boolean
     ) {
         if (checkService()) {
             val service = bluetoothGatt?.getService(UUID.fromString(operator.serviceUUID))
@@ -361,7 +359,7 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun readRemoteRssi() {
+    override fun readRemoteRssi() {
         if (checkService()) {
             val flag = bluetoothGatt?.readRemoteRssi()
             if (flag != true) {
@@ -372,7 +370,7 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
         }
     }
 
-    fun setMtu(mtu: Int) {
+    override fun setMtu(mtu: Int) {
         if (checkService()) {
             val flag = bluetoothGatt?.requestMtu(mtu)
             if (flag != true) {
@@ -421,37 +419,5 @@ class BleCentral(val device: BluetoothDevice) : ICentral {
     @Synchronized
     private fun closeBluetoothGatt() {
         bluetoothGatt?.close()
-    }
-
-    interface CentralGattCallback {
-        companion object {
-            const val STATUS_GATT_NULL = 100
-        }
-
-        fun onStartConnect(gatt: BluetoothGatt)
-
-        fun onConnectFailed(status: Int)
-
-        fun onConnected(gatt: BluetoothGatt, status: Int)
-
-        fun onDisconnected(gatt: BluetoothGatt, status: Int)
-
-        fun onServicesDiscovered(gatt: BluetoothGatt, status: Int)
-
-        fun onServicesDiscoverFailed(gatt: BluetoothGatt, status: Int)
-    }
-
-    abstract class CentralGattOperator(val serviceUUID: String, val characterUUID: String) {
-        open fun onRead(value: ByteArray, status: Int) {}
-
-        open fun onWrite(value: ByteArray, status: Int) {}
-
-        open fun onChange(value: ByteArray) {}
-
-        open fun onReadRemoteRssi(rssi: Int, status: Int) {}
-
-        open fun onMtuChanged(mtu: Int, status: Int) {}
-
-        open fun operateFailed() {}
     }
 }

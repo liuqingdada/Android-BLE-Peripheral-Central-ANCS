@@ -1,12 +1,13 @@
 package com.suhen.android.libble;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
-import com.suhen.android.libble.peripheral.BlePeripheral;
+import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.peripheral.IPeripheral;
 
 import java.lang.reflect.Constructor;
@@ -39,14 +40,20 @@ public final class BLE {
     /**
      * Create a new peripheral instance.
      */
-    public synchronized static IPeripheral newPeripheral(
-            Class<? extends BlePeripheral> clazz,
-            Context context
-    ) throws Exception {
-        Constructor<? extends BlePeripheral> constructor =
-                clazz.getDeclaredConstructor(Context.class);
+    public synchronized static IPeripheral newPeripheral(Class<? extends IPeripheral> clazz) throws Exception {
+        Constructor<? extends IPeripheral> constructor = clazz.getDeclaredConstructor();
         constructor.setAccessible(true);
-        return constructor.newInstance(context);
+        return constructor.newInstance();
+    }
+
+    public synchronized static ICentral newCentral(
+            Class<? extends ICentral> clazz,
+            BluetoothDevice device
+    ) throws Exception {
+        Constructor<? extends ICentral> constructor =
+                clazz.getDeclaredConstructor(BluetoothDevice.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(device);
     }
 
     /**

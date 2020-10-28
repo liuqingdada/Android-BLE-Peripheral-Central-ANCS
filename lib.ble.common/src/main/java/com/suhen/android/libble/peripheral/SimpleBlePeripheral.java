@@ -4,7 +4,6 @@ import android.annotation.TargetApi;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
-import android.content.Context;
 import android.os.Build;
 
 import java.util.concurrent.ExecutorService;
@@ -22,8 +21,7 @@ public class SimpleBlePeripheral extends BlePeripheral {
     private static final String TAG = "SimpleBlePeripheral";
     private volatile ExecutorService mExecutorService;
 
-    protected SimpleBlePeripheral(Context context) {
-        super(context);
+    protected SimpleBlePeripheral() {
     }
 
     @Override
@@ -66,9 +64,6 @@ public class SimpleBlePeripheral extends BlePeripheral {
         return new AdvertiseData.Builder().build();
     }
 
-    /**
-     * Note that this is the simplest implementation
-     */
     @Override
     protected void addGattService() {
     }

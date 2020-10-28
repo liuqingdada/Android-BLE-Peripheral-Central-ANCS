@@ -12,6 +12,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <Button
+            android:id="@+id/btOpenClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Open/Close BT" />
+
         <TextView
             android:id="@+id/tvLog"
             android:layout_width="match_parent"

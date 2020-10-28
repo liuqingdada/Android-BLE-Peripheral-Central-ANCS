@@ -44,7 +44,7 @@ public class SimpleBlePeripheralService extends Service {
         startForegroound();
 
         try {
-            mPeripheral = BLE.newPeripheral(BlePeripheralImpl.class, this);
+            mPeripheral = BLE.newPeripheral(SimpleBlePeripheralImpl.class);
             mPeripheral.onCreate();
             mPeripheral.setup();
         } catch (Exception e) {

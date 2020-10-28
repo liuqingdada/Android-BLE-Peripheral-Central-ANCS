@@ -26,7 +26,9 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.widget.Toast;
 
+import com.android.common.utils.AppUtils;
 import com.android.common.utils.LogUtil;
+import com.android.common.utils.SharedPrefsUtils;
 import com.suhen.android.libble.BLE;
 import com.suhen.android.libble.message.BleMessage;
 import com.suhen.android.libble.nrfscan.FastPairConstant;
@@ -34,8 +36,8 @@ import com.suhen.android.libble.peripheral.base.BleBasePeripheral;
 import com.suhen.android.libble.peripheral.base.IndicateRunnable;
 import com.suhen.android.libble.peripheral.base.SerialExecutor;
 import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback;
+import com.suhen.android.libble.peripheral.callback.BluetoothCallback;
 import com.suhen.android.libble.utils.ClsUtils;
-import com.android.common.utils.SharedPrefsUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -77,7 +79,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
      */
     private final Map<String, IndicateRunnable> indicateRunnables = new ConcurrentHashMap<>();
 
-    protected Context mContext;
+    protected Context mContext = AppUtils.application;
     private final Lock mLock = new ReentrantLock();
     private String bpKey = "";
 
@@ -88,9 +90,9 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
     private BluetoothDevice mConnectionDevice;
     private BluetoothStatusReceiver mBluetoothStatusReceiver;
+    private BluetoothCallback bluetoothCallback;
 
-    protected BlePeripheral(Context context) {
-        mContext = context;
+    protected BlePeripheral() {
         AssetManager assets = mContext.getAssets();
         BufferedReader br = null;
         try {
@@ -201,6 +203,11 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
         mIndicateService.clear();
         mGattServerCallbackThread.quitSafely();
         mGattServerWriteThread.quitSafely();
+    }
+
+    @Override
+    public void setBluetoothCallback(BluetoothCallback bluetoothCallback) {
+        this.bluetoothCallback = bluetoothCallback;
     }
 
     /* BluetoothGattServerCallback START */     /* BluetoothGattServerCallback START */
@@ -455,6 +462,10 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
                         LogUtil.e(TAG, "bluetooth OFF");
+
+                        if (bluetoothCallback != null) {
+                            bluetoothCallback.onClose();
+                        }
                         break;
 
                     case BluetoothAdapter.STATE_TURNING_OFF:
@@ -466,6 +477,9 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
                         LogUtil.e(TAG, "bluetooth ON");
                         mGattServerCallbackHandler.post(BlePeripheral.this::start);
 
+                        if (bluetoothCallback != null) {
+                            bluetoothCallback.onOpen();
+                        }
                         break;
 
                     case BluetoothAdapter.STATE_TURNING_ON:
@@ -512,7 +526,8 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             // step 1
             String btAddress = ClsUtils.getBtAddress();
             LogUtil.d(TAG, "start: get mac address " + btAddress);
-            SharedPrefsUtils.putString(mContext,
+            SharedPrefsUtils.putString(
+                    mContext,
                     FastPairConstant.Extra.SP_NAME,
                     BLE.PERIPHERAL_MAC,
                     btAddress
@@ -525,7 +540,8 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             String peripheralName = generatePeripheralName();
             mBluetoothAdapter.setName(peripheralName);
             LogUtil.d(TAG, "start: " + peripheralName);
-            SharedPrefsUtils.putString(mContext,
+            SharedPrefsUtils.putString(
+                    mContext,
                     FastPairConstant.Extra.SP_NAME,
                     BLE.PERIPHERAL_NAME,
                     peripheralName

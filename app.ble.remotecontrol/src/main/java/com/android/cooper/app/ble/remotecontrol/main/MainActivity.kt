@@ -15,17 +15,19 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.android.common.utils.AppUtils
 import com.android.common.utils.LogUtil
 import com.android.common.utils.SharedPrefsUtils
 import com.android.cooper.app.ble.remotecontrol.R
 import com.android.cooper.lib.blelogic.message.KeyEventMessage
 import com.suhen.android.libble.BLE
-import com.suhen.android.libble.central.BleCentral
+import com.suhen.android.libble.central.CentralGattCallback
+import com.suhen.android.libble.central.CentralGattOperator
+import com.suhen.android.libble.central.ICentral
 import com.suhen.android.libble.nrfscan.BleCompatibility
 import com.suhen.android.libble.nrfscan.BleScanManager
 import com.suhen.android.libble.nrfscan.FastPairConstant
 import com.suhen.android.libble.permission.PermissionWizard
-import com.android.common.utils.AppUtils
 import com.suhen.android.libble.utils.WeakHandler
 import kotlinx.android.synthetic.main.activity_main.*
 import no.nordicsemi.android.support.v18.scanner.ScanResult
@@ -232,7 +234,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private var central: BleCentral? = null
+    private var central: ICentral? = null
 
     fun needRescan(): Boolean {
         // 亮屏
@@ -329,7 +331,11 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "请重新扫描", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            connectBle(scanResult)
+            try {
+                connectBle(scanResult)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         btDisconnect.setOnClickListener {
             central?.disconnect()
@@ -404,6 +410,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Throws(Exception::class)
     private fun connectBle(result: ScanResult) {
         val device = result.device
         central?.device?.let {
@@ -413,7 +420,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (central == null) {
-            central = BleCentral(device)
+            central = BLE.newCentral(SimpleBleCentral::class.java, device)
             central?.centralGattCallback = centralGattCallback
             central?.addOperator(centralGattOperator)
         }
@@ -422,7 +429,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val centralGattCallback = object : BleCentral.CentralGattCallback {
+    private val centralGattCallback = object : CentralGattCallback {
         override fun onStartConnect(gatt: BluetoothGatt) {
         }
 
@@ -469,7 +476,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val centralGattOperator = object : BleCentral.CentralGattOperator(
+    private val centralGattOperator = object : CentralGattOperator(
         SERVICE_UUID,
         CHAR_WRITE_UUID
     ) {

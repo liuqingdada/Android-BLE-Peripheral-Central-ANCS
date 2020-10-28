@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
-import android.content.Context;
 import android.os.ParcelUuid;
 
 import com.android.common.utils.LogUtil;
@@ -19,7 +18,7 @@ import java.util.UUID;
  * 2019/1/25.
  * Email: 1239604859@qq.com
  */
-public class BlePeripheralImpl extends SimpleBlePeripheral {
+public class SimpleBlePeripheralImpl extends SimpleBlePeripheral {
     private static final String TAG = "BlePeripheralImpl";
     private static final ParcelUuid MI_SERVICE_UUID =
             ParcelUuid.fromString("0000FE95-0000-1000-8000-00805F9B34FB");
@@ -31,8 +30,7 @@ public class BlePeripheralImpl extends SimpleBlePeripheral {
 
     private static final int COMPANY_ID = 0x038F;
 
-    protected BlePeripheralImpl(Context context) {
-        super(context);
+    protected SimpleBlePeripheralImpl() {
     }
 
     @Override

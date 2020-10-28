@@ -1,7 +1,9 @@
 package com.android.cooper.app.miottvdemo.main
 
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothProfile
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -15,13 +17,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import com.android.common.utils.LogUtil
 import com.android.cooper.app.miottvdemo.R
-import com.android.cooper.app.miottvdemo.service.BlePeripheralImpl
+import com.android.cooper.app.miottvdemo.service.SimpleBlePeripheralImpl
 import com.android.cooper.app.miottvdemo.service.SimpleBlePeripheralService
 import com.android.cooper.lib.blelogic.message.KeyEventMessage
 import com.android.cooper.lib.blelogic.message.Profile
 import com.suhen.android.libble.message.BleMessage
 import com.suhen.android.libble.message.BleMessageDecoder
 import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback
+import com.suhen.android.libble.peripheral.callback.BluetoothCallback
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +34,8 @@ class MainActivity : AppCompatActivity() {
 
     private var peripheralService: SimpleBlePeripheralService? = null
     private val handler = Handler(Looper.getMainLooper())
+    private val adapter = BluetoothAdapter.getDefaultAdapter()
+    private var btOperate = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +49,18 @@ class MainActivity : AppCompatActivity() {
                 EchoBleMessage()
             )
         }*/
+
+        btOpenClose.setOnClickListener {
+            if (btOperate) {
+                if (adapter.state == BluetoothAdapter.STATE_ON) {
+                    adapter.disable()
+                }
+                if (adapter.state == BluetoothAdapter.STATE_OFF) {
+                    adapter.enable()
+                }
+                btOperate = false
+            }
+        }
     }
 
     private fun bindPeriphera() {
@@ -58,6 +75,15 @@ class MainActivity : AppCompatActivity() {
             peripheralService = binder.service
 
             peripheralService?.peripheral?.addBasePeripheralCallback(mBasePeripheralCallback)
+            peripheralService?.peripheral?.setBluetoothCallback(object : BluetoothCallback {
+                override fun onOpen() {
+                    btOperate = true
+                }
+
+                override fun onClose() {
+                    btOperate = true
+                }
+            })
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -72,8 +98,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val mBasePeripheralCallback: BasePeripheralCallback = object : BasePeripheralCallback(
-        BlePeripheralImpl.SERVICE_UUID,
-        BlePeripheralImpl.CHAR_WRITE_UUID
+        SimpleBlePeripheralImpl.SERVICE_UUID,
+        SimpleBlePeripheralImpl.CHAR_WRITE_UUID
     ) {
         val decoder = BleMessageDecoder { type, paylod ->
             LogUtil.d(TAG, "decoder: $type")
