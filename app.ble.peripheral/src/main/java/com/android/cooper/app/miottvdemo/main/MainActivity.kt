@@ -1,9 +1,9 @@
 package com.android.cooper.app.miottvdemo.main
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothProfile
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -30,6 +30,16 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "MainActivity"
+
+        fun nameForState(state: Int): String? {
+            return when (state) {
+                BluetoothAdapter.STATE_OFF -> "OFF"
+                BluetoothAdapter.STATE_TURNING_ON -> "TURNING_ON"
+                BluetoothAdapter.STATE_ON -> "ON"
+                BluetoothAdapter.STATE_TURNING_OFF -> "TURNING_OFF"
+                else -> "?!?!? ($state)"
+            }
+        }
     }
 
     private var peripheralService: SimpleBlePeripheralService? = null
@@ -61,12 +71,18 @@ class MainActivity : AppCompatActivity() {
                 btOperate = false
             }
         }
+        updateBtState()
     }
 
     private fun bindPeriphera() {
         val intent = Intent(this, SimpleBlePeripheralService::class.java)
         ContextCompat.startForegroundService(this, intent)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun updateBtState() {
+        btOpenClose.text = "Open/Close BT: ${nameForState(adapter.state)}"
     }
 
     private val serviceConnection = object : ServiceConnection {
@@ -77,10 +93,14 @@ class MainActivity : AppCompatActivity() {
             peripheralService?.peripheral?.addBasePeripheralCallback(mBasePeripheralCallback)
             peripheralService?.peripheral?.setBluetoothCallback(object : BluetoothCallback {
                 override fun onOpen() {
+                    updateBtState()
+
                     btOperate = true
                 }
 
                 override fun onClose() {
+                    updateBtState()
+
                     btOperate = true
                 }
             })
