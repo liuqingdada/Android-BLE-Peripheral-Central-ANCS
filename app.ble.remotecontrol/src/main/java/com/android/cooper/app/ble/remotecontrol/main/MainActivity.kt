@@ -405,8 +405,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectBle(result: ScanResult) {
+        val device = result.device
+        central?.device?.let {
+            if (it == device) {
+                central?.disconnect()
+                central = null
+            }
+        }
         if (central == null) {
-            central = BleCentral(result.device)
+            central = BleCentral(device)
             central?.centralGattCallback = centralGattCallback
             central?.addOperator(centralGattOperator)
         }
