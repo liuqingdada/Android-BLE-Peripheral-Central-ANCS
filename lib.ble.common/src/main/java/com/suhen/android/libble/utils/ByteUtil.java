@@ -1,4 +1,4 @@
-package com.suhen.android.libble.message.utils;
+package com.suhen.android.libble.utils;
 
 /**
  * Created by liuqing

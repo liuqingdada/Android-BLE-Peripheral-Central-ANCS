@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import com.android.common.utils.AppUtils
 import com.android.common.utils.LogUtil
 import com.android.common.utils.SharedPrefsUtils
+import com.android.common.utils.WeakHandler
 import com.android.cooper.app.ble.remotecontrol.R
 import com.android.cooper.lib.blelogic.message.KeyEventMessage
 import com.suhen.android.libble.BLE
@@ -28,7 +29,6 @@ import com.suhen.android.libble.nrfscan.BleCompatibility
 import com.suhen.android.libble.nrfscan.BleScanManager
 import com.suhen.android.libble.nrfscan.FastPairConstant
 import com.suhen.android.libble.permission.PermissionWizard
-import com.suhen.android.libble.utils.WeakHandler
 import kotlinx.android.synthetic.main.activity_main.*
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         private fun startBleScanLogic() {
             LogUtil.d(TAG, "startBleScanLogic: ")
-            if (!BLE.isSupportBle(AppUtils.application)) {
+            if (!BLE.isSupportCentral(AppUtils.application)) {
                 return
             }
             if (owner.needRescan()) {

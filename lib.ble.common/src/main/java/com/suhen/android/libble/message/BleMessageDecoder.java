@@ -13,7 +13,7 @@ import java.util.Arrays;
  */
 public class BleMessageDecoder {
     private static final String TAG = "BleMessageDecoder";
-    private ByteBuffer cache = ByteBuffer.allocate(1024);
+    protected ByteBuffer cache = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN);
 
     private final BleMessageListener bleMessageListener;
 
@@ -62,7 +62,7 @@ public class BleMessageDecoder {
         byte[] typeData = Arrays.copyOfRange(message, 0, 4);
         byte[] payload = Arrays.copyOfRange(message, 4, position);
 
-        ByteBuffer buffer = ByteBuffer.wrap(typeData);
+        ByteBuffer buffer = ByteBuffer.wrap(typeData).order(ByteOrder.LITTLE_ENDIAN);
         int type = buffer.getInt();
 
         bleMessageListener.onReceiveMessage(type, payload);

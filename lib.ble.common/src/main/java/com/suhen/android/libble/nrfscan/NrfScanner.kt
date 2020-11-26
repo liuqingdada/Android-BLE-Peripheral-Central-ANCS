@@ -1,8 +1,9 @@
 package com.suhen.android.libble.nrfscan
 
+import android.content.Context
 import android.os.Build
-import com.android.common.utils.LogUtil
 import com.android.common.utils.AppUtils
+import com.android.common.utils.LogUtil
 import com.android.common.utils.SharedPrefsUtils
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat
 import no.nordicsemi.android.support.v18.scanner.ScanCallback
@@ -18,10 +19,12 @@ internal class NrfScanner(private val scanCallback: ScanCallback) {
     companion object {
         private const val TAG = "NrfScanner"
 
-        private const val REPORT_DELAY: Long = FastPairConstant.SOURCE.BLE_SCAN_REPORT_DELAY
+        private const val REPORT_DELAY: Long = FastPairConstant.Source.BLE_SCAN_REPORT_DELAY
     }
 
-    private val context = AppUtils.application
+    private val context: Context by lazy {
+        AppUtils.application
+    }
 
     fun startLeCompatScan() {
         val settings = ScanSettings.Builder()

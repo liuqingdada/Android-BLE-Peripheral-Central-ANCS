@@ -84,26 +84,14 @@ private val THREAD_POOL_EXECUTOR = SerialExecutor.threadPoolExecutor
 
 private val MAIN_HANDLER = Handler(Looper.getMainLooper())
 
-fun serialExecute(block: () -> Unit) {
-    SERIAL_EXECUTOR.execute(block)
-}
-
 fun serialExecute(r: Runnable) {
     SERIAL_EXECUTOR.execute(r)
-}
-
-fun mainThread(delayMillis: Long = 0, block: () -> Unit) {
-    MAIN_HANDLER.postDelayed(block, delayMillis)
 }
 
 fun mainThread(delayMillis: Long = 0, r: Runnable) {
     MAIN_HANDLER.postDelayed(r, delayMillis)
 }
 
-fun execute(block: () -> Unit) {
-    THREAD_POOL_EXECUTOR.execute(block)
-}
-
-fun execute(r: Runnable) {
+fun asyncExecute(r: Runnable) {
     THREAD_POOL_EXECUTOR.execute(r)
 }

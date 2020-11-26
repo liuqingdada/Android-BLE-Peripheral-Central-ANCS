@@ -8,9 +8,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Handler
 import android.os.HandlerThread
+import com.android.common.utils.AppUtils
 import com.android.common.utils.LogUtil
 import com.suhen.android.libble.permission.PermissionWizard
-import com.android.common.utils.AppUtils
 import no.nordicsemi.android.support.v18.scanner.ScanCallback
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 import java.util.concurrent.atomic.AtomicBoolean

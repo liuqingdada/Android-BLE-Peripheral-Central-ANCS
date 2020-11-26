@@ -1,4 +1,4 @@
-package com.suhen.android.libble.message.utils;
+package com.suhen.android.libble.utils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

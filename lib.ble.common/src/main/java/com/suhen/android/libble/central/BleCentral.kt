@@ -7,8 +7,9 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import com.android.common.utils.LogUtil
+import androidx.annotation.RequiresApi
 import com.android.common.utils.AppUtils
+import com.android.common.utils.LogUtil
 import com.suhen.android.libble.central.ICentral.Companion.UUID_CLIENT_CHARACTERISTIC_CONFIG_DESCRIPTOR
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -370,6 +371,7 @@ abstract class BleCentral(override val device: BluetoothDevice) : ICentral {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun setMtu(mtu: Int) {
         if (checkService()) {
             val flag = bluetoothGatt?.requestMtu(mtu)

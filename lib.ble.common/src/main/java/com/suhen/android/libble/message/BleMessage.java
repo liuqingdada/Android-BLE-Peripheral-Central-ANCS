@@ -1,6 +1,6 @@
 package com.suhen.android.libble.message;
 
-import com.suhen.android.libble.message.utils.ByteUtil;
+import com.suhen.android.libble.utils.ByteUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +67,7 @@ public abstract class BleMessage {
         byte[] start = packets.get(0);
         start[0] = START_DEFAULT;
 
-        if (packets.size() == 1) { // 如果只有一个包就再加一个结束包
+        if (packets.size() == 1) {
             start[0] = START_ONE_PACKAGE_MSG;
         } else {
             // 结束符

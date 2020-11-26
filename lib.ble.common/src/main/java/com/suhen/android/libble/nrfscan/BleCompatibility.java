@@ -1,7 +1,6 @@
 package com.suhen.android.libble.nrfscan;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -309,7 +308,7 @@ public class BleCompatibility {
      * @param callback android le scan callback
      * @return mScannerId or mClientIf
      */
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public static int getScanClientId(ScanCallback callback) {
         int mClientIf = -1;
         try {

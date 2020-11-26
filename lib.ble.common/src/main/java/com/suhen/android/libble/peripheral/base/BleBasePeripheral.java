@@ -1,6 +1,7 @@
 package com.suhen.android.libble.peripheral.base;
 
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 
@@ -9,7 +10,7 @@ import android.bluetooth.le.AdvertiseSettings;
  * 2019/1/24.
  * Email: 1239604859@qq.com
  */
-public abstract class BleBasePeripheral {
+public abstract class BleBasePeripheral extends BluetoothGattServerCallback {
 
     protected abstract void peripheralNotSupport();
 

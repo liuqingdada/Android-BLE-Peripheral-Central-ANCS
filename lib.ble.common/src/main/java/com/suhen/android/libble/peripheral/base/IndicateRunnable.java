@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattServer;
 
+import com.suhen.android.libble.message.ActiveRunnable;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 20-10-20.
  * Email: 1239604859@qq.com
  */
-public class IndicateRunnable implements Runnable {
+public class IndicateRunnable extends ActiveRunnable {
     private final BluetoothGattServer bluetoothGattServer;
     private final BluetoothDevice connectedDevice;
     private final BluetoothGattCharacteristic characteristic;
@@ -63,5 +65,10 @@ public class IndicateRunnable implements Runnable {
             characteristic.setValue(first);
             bluetoothGattServer.notifyCharacteristicChanged(connectedDevice, characteristic, true);
         }
+    }
+
+    @Override
+    public boolean isIdle() {
+        return idle.get();
     }
 }

@@ -1,11 +1,10 @@
 package com.suhen.android.libble;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import com.suhen.android.libble.central.ICentral;
 import com.suhen.android.libble.peripheral.IPeripheral;
@@ -57,22 +56,19 @@ public final class BLE {
     }
 
     /**
-     * is support peripheral or central
+     * 中心设备只要判断这个即可
      */
-    public static boolean isSupportBle(Context context) {
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+    public static boolean isSupportCentral(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
+    }
 
-            BluetoothManager bluetoothManager =
-                    (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-            if (bluetoothManager == null) {
-                return false;
-            }
-
-            BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-
-            return bluetoothAdapter != null;
-        } else {
-            return false;
-        }
+    /**
+     * 并不是 Android L 的系统就可以支持 BLE Peripheral, 这个和硬件也有关系
+     * 最终以组件 Callback 为准
+     */
+    public static boolean isSupportPeripheral(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     }
 }

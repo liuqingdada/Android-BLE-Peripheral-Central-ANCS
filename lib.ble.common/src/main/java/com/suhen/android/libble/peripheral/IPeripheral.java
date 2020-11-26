@@ -22,6 +22,8 @@ public interface IPeripheral {
 
     boolean isConnected();
 
+    void cancelConnection();
+
     void notify(String serviceUUID, String characterUUID, byte[] data);
 
     void notify(BluetoothGattCharacteristic characteristic, byte[] data);

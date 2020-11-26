@@ -69,7 +69,7 @@ public class PermissionWizard {
     }
 
     public static boolean isLocationServiceAllowed(Context context) {
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int locationMode = Settings.Secure.LOCATION_MODE_OFF;
             try {
                 locationMode = Settings.Secure.getInt(
