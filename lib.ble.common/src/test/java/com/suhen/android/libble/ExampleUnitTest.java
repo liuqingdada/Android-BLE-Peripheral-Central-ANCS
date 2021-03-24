@@ -1,6 +1,6 @@
 package com.suhen.android.libble;
 
-import com.suhen.android.libble.message.utils.ByteZipUtil;
+import com.android.lib.ble.utils.ByteZipUtil;
 
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class ExampleUnitTest {
 
     @Test
     public void gzipTest() {
-        mString +=mString;
+        mString += mString;
         byte[] origin = mString.getBytes();
         System.out.println(origin.length);
 
@@ -39,7 +39,7 @@ public class ExampleUnitTest {
     }
 
     @Test
-    public void uuid(){
+    public void uuid() {
         // 4622c045-1cd2-4211-adc5-89df72c789ec
         String u = "4622c045-1cd2-4211-adc5-89df72c789ec";
     }

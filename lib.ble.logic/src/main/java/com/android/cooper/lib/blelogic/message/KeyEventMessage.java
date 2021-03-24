@@ -2,7 +2,7 @@ package com.android.cooper.lib.blelogic.message;
 
 import com.android.common.utils.LogUtil;
 import com.android.cooper.lib.blelogic.utils.RcUtils;
-import com.suhen.android.libble.message.BleMessage;
+import com.android.lib.ble.message.BleMessage;
 
 import java.nio.ByteBuffer;
 

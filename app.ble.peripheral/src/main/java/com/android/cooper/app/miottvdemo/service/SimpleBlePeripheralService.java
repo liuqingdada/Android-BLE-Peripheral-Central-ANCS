@@ -9,9 +9,9 @@ import androidx.core.app.NotificationManagerCompat;
 
 import com.android.common.utils.LogUtil;
 import com.android.cooper.app.miottvdemo.R;
-import com.suhen.android.libble.BLE;
-import com.suhen.android.libble.peripheral.IPeripheral;
-import com.suhen.android.libble.permission.NotificationWizard;
+import com.android.lib.ble.BLE;
+import com.android.lib.ble.peripheral.IPeripheral;
+import com.android.lib.ble.permission.NotificationWizard;
 
 public class SimpleBlePeripheralService extends Service {
     private static final String TAG = "SimpleBlePeripheralServ";

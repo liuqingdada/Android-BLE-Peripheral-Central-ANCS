@@ -1,7 +1,7 @@
 package com.android.cooper.app.ble.remotecontrol.main
 
 import android.bluetooth.BluetoothDevice
-import com.suhen.android.libble.central.BleCentral
+import com.android.lib.ble.central.BleCentral
 
 /**
  * Created by cooper

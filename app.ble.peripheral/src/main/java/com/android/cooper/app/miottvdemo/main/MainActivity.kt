@@ -21,17 +21,20 @@ import com.android.cooper.app.miottvdemo.service.SimpleBlePeripheralImpl
 import com.android.cooper.app.miottvdemo.service.SimpleBlePeripheralService
 import com.android.cooper.lib.blelogic.message.KeyEventMessage
 import com.android.cooper.lib.blelogic.message.Profile
-import com.suhen.android.libble.message.BleMessage
-import com.suhen.android.libble.message.BleMessageDecoder
-import com.suhen.android.libble.peripheral.callback.BasePeripheralCallback
-import com.suhen.android.libble.peripheral.callback.BluetoothCallback
+import com.android.lib.ble.message.BleMessage
+import com.android.lib.ble.message.BleMessageDecoder
+import com.android.lib.ble.message.BleMessageListener
+import com.android.lib.ble.peripheral.callback.BasePeripheralCallback
+import com.android.lib.ble.peripheral.callback.BluetoothCallback
 import kotlinx.android.synthetic.main.activity_main.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "MainActivity"
 
-        fun nameForState(state: Int): String? {
+        fun nameForState(state: Int): String {
             return when (state) {
                 BluetoothAdapter.STATE_OFF -> "OFF"
                 BluetoothAdapter.STATE_TURNING_ON -> "TURNING_ON"
@@ -121,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         SimpleBlePeripheralImpl.SERVICE_UUID,
         SimpleBlePeripheralImpl.CHAR_WRITE_UUID
     ) {
-        val decoder = BleMessageDecoder { type, paylod ->
+        val decoder = LimitedBleMessageDecoder { type, paylod ->
             LogUtil.d(TAG, "decoder: $type")
             when (type) {
                 Profile.KEY_EVENT_MESSAGE_TYPE -> {
@@ -156,6 +159,25 @@ class MainActivity : AppCompatActivity() {
             }
 
             decoder.stash(value)
+        }
+    }
+
+    private class LimitedBleMessageDecoder(
+        listener: BleMessageListener,
+    ) : BleMessageDecoder(listener) {
+        companion object {
+            private const val TAG = "BlePeripheralRCService"
+            private const val MAX_MESSAGE_LENGTH = 1024 * 1024
+        }
+
+        override fun stash(data: ByteArray?) {
+            if (cache.capacity() >= MAX_MESSAGE_LENGTH) {
+                LogUtil.w(TAG, "Message length is over limit")
+                cache.clear()
+                cache = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
+                return
+            }
+            super.stash(data)
         }
     }
 }

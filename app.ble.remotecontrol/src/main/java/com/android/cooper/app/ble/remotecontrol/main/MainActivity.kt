@@ -21,14 +21,14 @@ import com.android.common.utils.SharedPrefsUtils
 import com.android.common.utils.WeakHandler
 import com.android.cooper.app.ble.remotecontrol.R
 import com.android.cooper.lib.blelogic.message.KeyEventMessage
-import com.suhen.android.libble.BLE
-import com.suhen.android.libble.central.CentralGattCallback
-import com.suhen.android.libble.central.CentralGattOperator
-import com.suhen.android.libble.central.ICentral
-import com.suhen.android.libble.nrfscan.BleCompatibility
-import com.suhen.android.libble.nrfscan.BleScanManager
-import com.suhen.android.libble.nrfscan.FastPairConstant
-import com.suhen.android.libble.permission.PermissionWizard
+import com.android.lib.ble.BLE
+import com.android.lib.ble.central.CentralGattCallback
+import com.android.lib.ble.central.CentralGattOperator
+import com.android.lib.ble.central.ICentral
+import com.android.lib.ble.nrfscan.BleCompatibility
+import com.android.lib.ble.nrfscan.BleScanManager
+import com.android.lib.ble.nrfscan.FastPairConstant
+import com.android.lib.ble.permission.PermissionWizard
 import kotlinx.android.synthetic.main.activity_main.*
 import no.nordicsemi.android.support.v18.scanner.ScanResult
 

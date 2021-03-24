@@ -32,6 +32,4 @@ dependencies {
     implementation project(':AndroidCommon')
 
     api 'no.nordicsemi.android.support.v18:scanner:1.4.2'
-    api "com.jcraft:jzlib:$rootProject.jzlib"
-    api "org.apache.commons:commons-compress:1.18"
 }

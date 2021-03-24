@@ -8,8 +8,8 @@ import android.bluetooth.le.AdvertiseSettings;
 import android.os.ParcelUuid;
 
 import com.android.common.utils.LogUtil;
-import com.suhen.android.libble.message.utils.ByteUtil;
-import com.suhen.android.libble.peripheral.SimpleBlePeripheral;
+import com.android.lib.ble.peripheral.SimpleBlePeripheral;
+import com.android.lib.ble.utils.ByteUtil;
 
 import java.util.UUID;
 
