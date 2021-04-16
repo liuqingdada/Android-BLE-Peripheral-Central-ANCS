@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.android.common.utils.ExecutorsKt.serialExecute;
+
 /**
  * Created by cooper
  * 20-10-20.
@@ -44,13 +46,15 @@ public class IndicateRunnable extends ActiveRunnable {
     }
 
     public void next() {
-        send();
+        serialExecute(() -> {
+            send();
 
-        // 如果此时没有数据了
-        // 证明进入 IDLE 状态
-        if (packages.isEmpty()) {
-            idle.compareAndSet(false, true);
-        }
+            // 如果此时没有数据了
+            // 证明进入 IDLE 状态
+            if (packages.isEmpty()) {
+                idle.compareAndSet(false, true);
+            }
+        });
     }
 
     public void putSubPackage(List<byte[]> subpackage) {

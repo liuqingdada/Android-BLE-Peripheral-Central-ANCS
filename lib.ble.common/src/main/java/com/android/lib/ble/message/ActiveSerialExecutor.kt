@@ -21,8 +21,10 @@ class ActiveSerialExecutor {
         tasks.offer {
             try {
                 r.run()
-                while (r.isIdle() || isClean) {
-                    break
+                while (true) {
+                    if (r.isIdle() || isClean) {
+                        break
+                    }
                 }
             } finally {
                 scheduleNext()
