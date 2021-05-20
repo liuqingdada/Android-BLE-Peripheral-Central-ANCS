@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGattServer;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -20,8 +21,8 @@ public class IndicateRunnable implements Runnable {
     private final BluetoothGattCharacteristic characteristic;
 
     private final ConcurrentLinkedQueue<byte[]> packages = new ConcurrentLinkedQueue<>();
+    private final AtomicReference<Thread> threadRef = new AtomicReference<>(null);
     private final AtomicBoolean quit = new AtomicBoolean(false);
-    private volatile Thread t;
 
     public IndicateRunnable(
             BluetoothGattServer bluetoothGattServer,
@@ -35,8 +36,7 @@ public class IndicateRunnable implements Runnable {
 
     @Override
     public void run() {
-        if (t == null) {
-            t = Thread.currentThread();
+        if (threadRef.compareAndSet(null, Thread.currentThread())) {
             while (!packages.isEmpty()) {
                 if (quit.get()) {
                     break;
@@ -44,11 +44,12 @@ public class IndicateRunnable implements Runnable {
                 send();
                 LockSupport.park(this);
             }
+            threadRef.set(null);
         }
     }
 
     public synchronized void next() {
-        LockSupport.unpark(t);
+        LockSupport.unpark(threadRef.get());
     }
 
     public void putSubPackage(List<byte[]> subpackage) {
@@ -59,12 +60,12 @@ public class IndicateRunnable implements Runnable {
 
     public void quit() {
         if (quit.compareAndSet(false, true)) {
-            if (t != null) {
+            Thread t = threadRef.get();
+            if (t != null && threadRef.compareAndSet(t, null)) {
                 t.interrupt();
-                t = null;
             }
+            packages.clear();
         }
-        packages.clear();
     }
 
     private void send() {
