@@ -1,29 +1,27 @@
-package com.android.lib.ble.peripheral.base;
+package com.android.lib.ble.message;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattServer;
 
-import com.android.lib.ble.message.ActiveRunnable;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.android.common.utils.ExecutorsKt.serialExecute;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by cooper
  * 20-10-20.
  * Email: 1239604859@qq.com
  */
-public class IndicateRunnable extends ActiveRunnable {
+public class IndicateRunnable implements Runnable {
     private final BluetoothGattServer bluetoothGattServer;
     private final BluetoothDevice connectedDevice;
     private final BluetoothGattCharacteristic characteristic;
 
     private final ConcurrentLinkedQueue<byte[]> packages = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean idle = new AtomicBoolean(true);
+    private final AtomicBoolean quit = new AtomicBoolean(false);
+    private volatile Thread t;
 
     public IndicateRunnable(
             BluetoothGattServer bluetoothGattServer,
@@ -37,24 +35,20 @@ public class IndicateRunnable extends ActiveRunnable {
 
     @Override
     public void run() {
-        if (!idle.get()) {
-            return;
-        }
-        if (idle.compareAndSet(true, false)) {
-            send();
+        if (t == null) {
+            t = Thread.currentThread();
+            while (!packages.isEmpty()) {
+                if (quit.get()) {
+                    break;
+                }
+                send();
+                LockSupport.park(this);
+            }
         }
     }
 
-    public void next() {
-        serialExecute(() -> {
-            send();
-
-            // 如果此时没有数据了
-            // 证明进入 IDLE 状态
-            if (packages.isEmpty()) {
-                idle.compareAndSet(false, true);
-            }
-        });
+    public synchronized void next() {
+        LockSupport.unpark(t);
     }
 
     public void putSubPackage(List<byte[]> subpackage) {
@@ -63,16 +57,21 @@ public class IndicateRunnable extends ActiveRunnable {
         }
     }
 
+    public void quit() {
+        if (quit.compareAndSet(false, true)) {
+            if (t != null) {
+                t.interrupt();
+                t = null;
+            }
+        }
+        packages.clear();
+    }
+
     private void send() {
         byte[] first = packages.poll();
         if (first != null) {
             characteristic.setValue(first);
             bluetoothGattServer.notifyCharacteristicChanged(connectedDevice, characteristic, true);
         }
-    }
-
-    @Override
-    public boolean isIdle() {
-        return idle.get();
     }
 }

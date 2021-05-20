@@ -1,6 +1,6 @@
 package com.android.lib.ble.message
 
-import com.android.common.utils.asyncExecute
+import com.android.common.utils.execute
 import java.util.*
 
 /**
@@ -9,27 +9,22 @@ import java.util.*
  * Email: 1239604859@qq.com
  */
 class ActiveSerialExecutor {
-    private val tasks = ArrayDeque<Runnable>()
+    private val tasks = ArrayDeque<RunnableWrapper>()
 
-    @Volatile
-    private var isClean = false
-
-    var active: Runnable? = null
+    var active: RunnableWrapper? = null
+        private set
 
     @Synchronized
-    fun execute(r: ActiveRunnable) {
-        tasks.offer {
-            try {
-                r.run()
-                while (true) {
-                    if (r.isIdle() || isClean) {
-                        break
-                    }
+    fun execute(r: IndicateRunnable) {
+        tasks.offer(object : RunnableWrapper(r) {
+            override fun run() {
+                try {
+                    indicateRunnable.run()
+                } finally {
+                    scheduleNext()
                 }
-            } finally {
-                scheduleNext()
             }
-        }
+        })
         if (active == null) {
             scheduleNext()
         }
@@ -37,23 +32,15 @@ class ActiveSerialExecutor {
 
     private fun scheduleNext() {
         active = tasks.poll()
-        active?.let {
-            asyncExecute(it)
+        active?.run {
+            execute(this)
         }
     }
 
     @Synchronized
-    fun ready() {
-        isClean = false
-    }
-
-    @Synchronized
-    fun clear() {
-        isClean = true
+    fun quit() {
         tasks.clear()
     }
-}
 
-abstract class ActiveRunnable : Runnable {
-    abstract fun isIdle(): Boolean
+    abstract class RunnableWrapper(val indicateRunnable: IndicateRunnable) : Runnable
 }

@@ -8,4 +8,4 @@ import com.android.lib.ble.central.BleCentral
  * 20-10-28.
  * Email: 1239604859@qq.com
  */
-class SimpleBleCentral(override val device: BluetoothDevice) : BleCentral(device)
+class SimpleBleCentral(device: BluetoothDevice) : BleCentral(device)

@@ -48,4 +48,5 @@ public abstract class BleBasePeripheral extends BluetoothGattServerCallback {
      */
     protected abstract void addGattService();
 
+    protected abstract void postAction(Runnable r);
 }

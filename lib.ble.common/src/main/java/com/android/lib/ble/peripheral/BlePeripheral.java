@@ -36,7 +36,7 @@ import com.android.lib.ble.message.ActiveSerialExecutor;
 import com.android.lib.ble.message.BleMessage;
 import com.android.lib.ble.nrfscan.FastPairConstant;
 import com.android.lib.ble.peripheral.base.BleBasePeripheral;
-import com.android.lib.ble.peripheral.base.IndicateRunnable;
+import com.android.lib.ble.message.IndicateRunnable;
 import com.android.lib.ble.peripheral.callback.BasePeripheralCallback;
 import com.android.lib.ble.peripheral.callback.BluetoothCallback;
 import com.android.lib.ble.utils.ClsUtils;
@@ -180,7 +180,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     public void onDestroy() {
         mContext.unregisterReceiver(mBluetoothStatusReceiver);
         stop();
-        mIndicateService.clear();
+        quitIndicates();
         mGattServerCallbackThread.quitSafely();
         mGattServerWriteThread.quitSafely();
     }
@@ -218,8 +218,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
                 }*/
                 mGattServerCallbackHandler.post(() -> {
                     mBluetoothGattServer.connect(device, false);
-                    mIndicateService.ready();
-                    indicateRunnables.clear();
+                    quitIndicates();
 
                     onConnected(device);
                 });
@@ -228,8 +227,7 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             case BluetoothProfile.STATE_DISCONNECTED:
                 LogUtil.d(TAG, "onConnectionStateChange: peripheral STATE_DISCONNECTED");
                 mGattServerCallbackHandler.post(() -> {
-                    mIndicateService.clear();
-                    indicateRunnables.clear();
+                    quitIndicates();
 
                     onDisconnected(device);
                 });
@@ -431,6 +429,11 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     /* BluetoothGattServerCallback END */       /* BluetoothGattServerCallback END */
     /* BluetoothGattServerCallback END */       /* BluetoothGattServerCallback END */
 
+    @Override
+    protected void postAction(Runnable r) {
+        mGattServerCallbackHandler.post(r);
+    }
+
     private class BluetoothStatusReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -559,7 +562,6 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
 
     private synchronized void stop() {
         if (peripheralFlag.compareAndSet(true, false)) {
-            indicateRunnables.clear();
             stopAdvertising();
             if (mBluetoothGattServer != null) {
                 mBluetoothGattServer.clearServices();
@@ -614,12 +616,18 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
             AdvertiseData scanResponse = generateAdvertiseResponse();
             LogUtil.i(TAG, "startAdvertising scanResponse: " + scanResponse.toString());
 
-            mLeAdvertiser.startAdvertising(
-                    generateAdvertiseSettings(),
-                    advertiseData,
-                    scanResponse,
-                    mAdvertiseCallback
-            );
+            if (mBluetoothAdapter.isEnabled()) {
+                try {
+                    mLeAdvertiser.startAdvertising(
+                            generateAdvertiseSettings(),
+                            advertiseData,
+                            scanResponse,
+                            mAdvertiseCallback
+                    );
+                } catch (Exception e) {
+                    LogUtil.d(TAG, "startAdvertising error: ", e);
+                }
+            }
         }
     }
 
@@ -720,10 +728,9 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
     }
 
     private void nextIndicatePackage() {
-        Runnable active = mIndicateService.getActive();
-        if (active instanceof IndicateRunnable) {
-            IndicateRunnable indicateRunnable = (IndicateRunnable) active;
-            indicateRunnable.next();
+        ActiveSerialExecutor.RunnableWrapper active = mIndicateService.getActive();
+        if (active != null) {
+            active.getIndicateRunnable().next();
         }
     }
 
@@ -740,5 +747,13 @@ public abstract class BlePeripheral extends BleBasePeripheral implements IPeriph
                 offset,
                 value
         );
+    }
+
+    private void quitIndicates() {
+        for (IndicateRunnable runnable : indicateRunnables.values()) {
+            runnable.quit();
+        }
+        indicateRunnables.clear();
+        mIndicateService.quit();
     }
 }

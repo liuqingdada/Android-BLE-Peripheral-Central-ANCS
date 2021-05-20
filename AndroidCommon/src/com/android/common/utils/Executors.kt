@@ -1,6 +1,7 @@
 package com.android.common.utils
 
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
 import java.util.*
 import java.util.concurrent.*
@@ -41,12 +42,14 @@ class SerialExecutor : Executor {
         private const val BACKUP_POOL_SIZE = 5
         private const val KEEP_ALIVE_SECONDS: Long = 3
 
+        val workThread = HandlerThread("SerialExecutor-Work")
+
         // Used only for rejected executions.
         // Initialization protected by sRunOnSerialPolicy lock.
         private var backupExecutor: ThreadPoolExecutor? = null
         private var backupExecutorQueue: LinkedBlockingQueue<Runnable>? = null
 
-        var threadPoolExecutor: ThreadPoolExecutor = ThreadPoolExecutor(
+        private var threadPoolExecutor: ThreadPoolExecutor = ThreadPoolExecutor(
             CORE_POOL_SIZE,
             MAXIMUM_POOL_SIZE,
             KEEP_ALIVE_SECONDS,
@@ -54,7 +57,15 @@ class SerialExecutor : Executor {
             SynchronousQueue(),
             SerialPolicy()
         )
-            private set
+
+        init {
+            workThread.start()
+        }
+
+        val MAIN_HANDLER = Handler(Looper.getMainLooper())
+        val SERIAL_EXECUTOR = SerialExecutor()
+        val THREAD_POOL_EXECUTOR = threadPoolExecutor
+        val WORK_HANDLER = Handler(workThread.looper)
     }
 
     class SerialPolicy : RejectedExecutionHandler {
@@ -79,19 +90,18 @@ class SerialExecutor : Executor {
     }
 }
 
-private val SERIAL_EXECUTOR = SerialExecutor()
-private val THREAD_POOL_EXECUTOR = SerialExecutor.threadPoolExecutor
-
-private val MAIN_HANDLER = Handler(Looper.getMainLooper())
-
 fun serialExecute(r: Runnable) {
-    SERIAL_EXECUTOR.execute(r)
+    SerialExecutor.SERIAL_EXECUTOR.execute(r)
 }
 
 fun mainThread(delayMillis: Long = 0, r: Runnable) {
-    MAIN_HANDLER.postDelayed(r, delayMillis)
+    SerialExecutor.MAIN_HANDLER.postDelayed(r, delayMillis)
 }
 
-fun asyncExecute(r: Runnable) {
-    THREAD_POOL_EXECUTOR.execute(r)
+fun workThread(delayMillis: Long = 0, r: Runnable) {
+    SerialExecutor.WORK_HANDLER.postDelayed(r, delayMillis)
+}
+
+fun execute(r: Runnable) {
+    SerialExecutor.THREAD_POOL_EXECUTOR.execute(r)
 }
